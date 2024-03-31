@@ -1,0 +1,39 @@
+{
+  "name": "vite-sveltekit-cf-ws",
+  "version": "1.0.0",
+  "description": "",
+  "author": "Aolose",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.2",
+    "@types/ws": "^8.5.10",
+    "vite": "^5.1.5",
+    "vite-plugin-dts": "^3.8.1",
+    "vite-plugin-require": "^1.1.14"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aolose/ooo.git"
+  },
+  "private": true
+}
