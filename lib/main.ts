@@ -23,7 +23,7 @@ let WSServer: Type<WebSocket.Server>
 const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buffer) => {
     const {pathname} = new URL(req.url || '', 'wss://base.url');
     const fn = listeners[pathname];
-    log(`fn: ${fn?.toString()}`)
+    if(!fn)log(`no ws handle  for path: ${pathname}`)
     if (fn) {
         if (socket) {
             let srv = wsPool[pathname];
@@ -39,7 +39,6 @@ const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buff
             });
 
         } else {
-            log('use cloudflare ws')
             try {
                 // cloudflare Worker environment
                 const upgradeHeader = (req as Request).headers.get('Upgrade');
@@ -49,9 +48,7 @@ const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buff
                     server = webSocketPair[1] as typeof webSocketPair[1] & {
                         accept: () => void
                     }
-                log('serv accept')
                 server.accept();
-                log('serv accepted')
                 // @ts-ignore
                 fn(server, client);
                 return new (Response)(null, {
@@ -61,7 +58,7 @@ const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buff
                 });
             } catch (e) {
                 if (e instanceof Error)
-                    log(e.toString())
+                    log('error:' + e.toString())
             }
         }
     }
