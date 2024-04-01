@@ -33,7 +33,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/aolose/ooo.git"
-  },
-  "private": true
+    "url": "https://github.com/aolose/vite-sveltekit-cf-ws.git"
+  }
 }
