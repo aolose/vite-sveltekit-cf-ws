@@ -74,7 +74,7 @@ function h() {
   };
 }
 const v = (e, t) => {
-  l[e] = t;
+  t && (l[e] = t);
 }, g = (e) => {
   delete l[e];
 };

@@ -126,7 +126,7 @@ function WsPlugin() {
 }
 
 const bind = (path: string, listener: bindFunction) => {
-    listeners[path] = listener
+    if(listener)listeners[path] = listener
 }
 
 const unbind = (path: string) => {
@@ -136,7 +136,7 @@ const unbind = (path: string) => {
 let log = (a: string) => {
 }
 
-const watchLog = (cb: (s: string) => string) => {
+const watchLog = (cb: (s: string) => void) => {
     log = cb
 }
 export {
