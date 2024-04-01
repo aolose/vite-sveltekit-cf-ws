@@ -1,11 +1,11 @@
-const c = {}, d = {};
+const c = {}, u = {};
 let a;
 const p = async (e, t, o) => {
   const { pathname: s } = new URL(e.url || "", "wss://base.url"), r = c[s];
   if (r)
     if (t) {
-      let n = d[s];
-      n || (n = new a({ noServer: !0 }), d[s] = n, n.on("connection", (i) => {
+      let n = u[s];
+      n || (n = new a({ noServer: !0 }), u[s] = n, n.on("connection", (i) => {
         r(i, i);
       })), n.handleUpgrade(e, t, o, (i) => {
         n.emit("connection", i, e);
@@ -14,8 +14,8 @@ const p = async (e, t, o) => {
       const n = e.headers.get("Upgrade");
       if (!n || n !== "websocket")
         return;
-      const i = new WebSocketPair(), l = i[0], u = i[1];
-      return u.accept(), r(u, l), new Response(null, {
+      const i = new WebSocketPair(), l = i[0], d = i[1];
+      return r(d, l), new Response(null, {
         status: 101,
         // @ts-ignore
         webSocket: l

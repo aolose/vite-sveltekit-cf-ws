@@ -43,7 +43,7 @@ const handle = async (req: IncomingMessage | Request,socket:Duplex,head:Buffer) 
                 server = webSocketPair[1] as typeof webSocketPair[1] & {
                     accept: () => void
                 }
-            server.accept();
+            // server.accept();
             // @ts-ignore
             fn(server, client);
             return new (Response)(null, {
