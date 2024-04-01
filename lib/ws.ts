@@ -2,7 +2,6 @@ import type {Connect} from 'vite';
 import {WebSocketServer} from 'ws';
 
 import type {Duplex} from 'node:stream';
-import {WebSocket} from "@cloudflare/workers-types/experimental/index";
 
 type IncomingMessage = Connect.IncomingMessage;
 
