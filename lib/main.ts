@@ -12,7 +12,7 @@ export type serverHandle = (
     head: Buffer
 ) => Response | Promise<Response | void> | void;
 
-const devGlobal = global as typeof global & {
+const devGlobal = globalThis as typeof globalThis & {
     __serverHandle: serverHandle;
 };
 
