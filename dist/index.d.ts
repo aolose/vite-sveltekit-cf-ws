@@ -1,4 +1,5 @@
 import { Connect } from 'vite';
+import { Duplex } from 'node:stream';
 import { ProgramNode } from 'rollup';
 import { TransformPluginContext } from 'rollup';
 import { ViteDevServer } from 'vite';
@@ -8,7 +9,7 @@ export declare const bind: (path: string, listener: bindFunction) => void;
 
 declare type bindFunction = (server: WebSocket_2, client: WebSocket_2) => void;
 
-export declare const handle: (req: IncomingMessage | Request) => Promise<Response | undefined>;
+export declare const handle: (req: IncomingMessage | Request, socket: Duplex, head: Buffer) => Promise<Response | undefined>;
 
 declare type IncomingMessage = Connect.IncomingMessage;
 

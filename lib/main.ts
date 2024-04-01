@@ -1,11 +1,14 @@
 import {type Connect, type Plugin, type WebSocket} from 'vite';
 import type {Server} from 'node:http';
+import type {Duplex} from 'node:stream';
 
 
 type IncomingMessage = Connect.IncomingMessage;
 type bindFunction = (server: WebSocket, client: WebSocket) => void
 type serverHandle = (
-    request: IncomingMessage | Request
+    request: IncomingMessage | Request,
+    socket: Duplex,
+    head: Buffer
 ) => Response | Promise<Response | void> | void;
 
 const listeners = {} as { [key: string]: bindFunction }
@@ -13,13 +16,12 @@ const listeners = {} as { [key: string]: bindFunction }
 const wsPool = {} as { [key: string]: WebSocket.Server};
 
 interface Type<T> extends Function { new (...args: unknown[]): T; }
-let useViteServer = false
 let WSServer :Type<WebSocket.Server>
-const handle = async (req: IncomingMessage | Request) => {
+const handle = async (req: IncomingMessage | Request,socket:Duplex,head:Buffer) => {
     const {pathname} = new URL(req.url || '', 'wss://base.url');
     const fn = listeners[pathname];
     if (fn) {
-        if (useViteServer) {
+        if (socket) {
             let srv = wsPool[pathname];
             if (!srv) {
                 srv = new WSServer({noServer: true});
@@ -28,7 +30,6 @@ const handle = async (req: IncomingMessage | Request) => {
                     fn(serv, serv);
                 });
             }
-            // @ts-ignore
             srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws:unknown) => {
                 srv.emit('connection', ws, req);
             });
@@ -88,7 +89,6 @@ function WsPlugin() {
             return null;
         },
         async configureServer(server) {
-            useViteServer = true
             if(!WSServer){
                 new Promise((resolve)=>{
                     const run =()=>{
@@ -109,7 +109,7 @@ function WsPlugin() {
             (server.httpServer as Server)?.on('upgrade', async (req, socket, head) => {
                 const h = devGlobal.__serverHandle;
                 if (h) {
-                    await h(req);
+                    await h(req, socket, head);
                 }
             });
         }
