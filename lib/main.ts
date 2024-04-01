@@ -30,7 +30,7 @@ function WsPlugin() {
                         `
                 async respond(request, options) {
                     if(handle){
-                      if(dev)global.__serverHandle=handle
+                      if(dev)globalThis.__serverHandle=handle
                       else{
                          const resp = await handle(request)
                          if(resp) return resp

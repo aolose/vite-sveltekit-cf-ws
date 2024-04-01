@@ -1,9 +1,9 @@
 import { WebSocketServer as u } from "ws";
 const i = {}, v = (e, t) => {
   i[e] = t;
-}, w = (e) => {
+}, h = (e) => {
   delete i[e];
-}, d = {}, b = async (e, t, r) => {
+}, d = {}, w = async (e, t, r) => {
   const {
     pathname: o
   } = new URL(e.url || "", "wss://base.url"), a = i[o];
@@ -30,8 +30,8 @@ const i = {}, v = (e, t) => {
         webSocket: l
       });
     }
-}, p = global;
-function h() {
+}, p = globalThis;
+function b() {
   return {
     name: "svelte-kit-websocket",
     async transform(e, t) {
@@ -41,7 +41,7 @@ function h() {
 					` + e.replace("async respond(request, options) {", `
                 async respond(request, options) {
                     if(handle){
-                      if(dev)global.__serverHandle=handle
+                      if(dev)globalThis.__serverHandle=handle
                       else{
                          const resp = await handle(request)
                          if(resp) return resp
@@ -69,7 +69,7 @@ function h() {
 }
 export {
   v as bind,
-  h as default,
-  b as handle,
-  w as unbind
+  b as default,
+  w as handle,
+  h as unbind
 };
