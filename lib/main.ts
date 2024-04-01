@@ -1,16 +1,72 @@
-import {type Connect, type Plugin} from 'vite';
+import {type Connect, type Plugin, WebSocket} from 'vite';
 import type {Server} from 'node:http';
 import type {Duplex} from 'node:stream';
 
-import {bind, unbind, handle} from './ws'
+const WSServer = WebSocket.Server
 
 type IncomingMessage = Connect.IncomingMessage;
-
-export type serverHandle = (
+type bindFunction = (server: WebSocket, client: WebSocket) => void
+type serverHandle = (
     request: IncomingMessage | Request,
     socket: Duplex,
     head: Buffer
 ) => Response | Promise<Response | void> | void;
+
+const listeners = {} as { [key: string]: bindFunction }
+
+const bind = (path: string, listener: bindFunction) => {
+    listeners[path] = listener
+}
+const unbind = (path: string) => {
+    delete listeners[path]
+}
+
+const sv = new WSServer({noServer:true})
+type WebSocketServer = typeof sv
+
+const wsPool = {} as { [key: string]: WebSocketServer };
+
+const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buffer) => {
+    const {pathname} = new URL(req.url || '', 'wss://base.url');
+    const fn = listeners[pathname];
+    if (fn) {
+        if (socket) {
+            let srv = wsPool[pathname];
+
+            if (!srv) {
+                console.log({WebSocketServer: WSServer})
+                srv = new WSServer({noServer: true});
+                wsPool[pathname] = srv;
+                srv.on('connection', (serv: WebSocket) => {
+                    fn(serv, serv);
+                });
+            }
+
+            srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws) => {
+                srv.emit('connection', ws, req);
+            });
+
+        } else {
+            // cloudflare Worker environment
+            const upgradeHeader = (req as Request).headers.get('Upgrade');
+            if (!upgradeHeader || upgradeHeader !== 'websocket') return;
+            const webSocketPair = new WebSocketPair();
+            const client = webSocketPair[0],
+                server = webSocketPair[1] as typeof webSocketPair[1] & {
+                    accept: () => void
+                }
+
+            server.accept();
+            // @ts-ignore
+            fn(server, client);
+            return new (Response)(null, {
+                status: 101,
+                // @ts-ignore
+                webSocket: client
+            });
+        }
+    }
+};
 
 const devGlobal = globalThis as typeof globalThis & {
     __serverHandle: serverHandle;

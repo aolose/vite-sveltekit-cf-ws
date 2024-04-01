@@ -1,22 +1,17 @@
-// @ts-ignore
-
 import {resolve} from 'path'
-import  dts from 'vite-plugin-dts'
-import vitePluginRequire from "vite-plugin-require";
+import dts from 'vite-plugin-dts'
 import {defineConfig} from 'vite'
 
 export default defineConfig({
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    plugins:[ vitePluginRequire.default(),dts({rollupTypes:true})],
+    plugins: [dts({rollupTypes: true})],
     build: {
-        rollupOptions:{
-            external:["ws"]
+        rollupOptions: {
+            external: ["vite"]
         },
         lib: {
             entry: resolve(__dirname, 'lib/main.ts'),
-            fileName:'index',
-            formats: ['es','cjs']
+            fileName: 'index',
+            formats: ['es', 'cjs']
         }
     }
 });
