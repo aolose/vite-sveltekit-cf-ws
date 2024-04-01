@@ -1,5 +1,4 @@
-import {type Connect, type Plugin, transformWithEsbuild} from 'vite';
-import {readFileSync} from 'node:fs';
+import {type Connect, type Plugin} from 'vite';
 import type {Server} from 'node:http';
 import type {Duplex} from 'node:stream';
 
@@ -24,7 +23,7 @@ function WsPlugin() {
             if (id.endsWith('@sveltejs/kit/src/runtime/server/index.js')) {
                 code =
                     `import {dev} from "$app/environment";
-					import {handle} from "vite-cloudflare-sveltekit-ws"
+					import {handle} from "vite-sveltekit-cf-ws"
 					` +
                     code.replace(
                         'async respond(request, options) {',

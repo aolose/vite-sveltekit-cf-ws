@@ -26,6 +26,7 @@ const i = {}, v = (e, t) => {
       const s = new WebSocketPair(), l = s[0], c = s[1];
       return c.accept(), a(c, l), new Response(null, {
         status: 101,
+        // @ts-ignore
         webSocket: l
       });
     }
@@ -36,7 +37,7 @@ function h() {
     async transform(e, t) {
       if (t.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
         e = `import {dev} from "$app/environment";
-					import {handle} from "vite-cloudflare-sveltekit-ws"
+					import {handle} from "vite-sveltekit-cf-ws"
 					` + e.replace("async respond(request, options) {", `
                 async respond(request, options) {
                     if(handle){

@@ -10,6 +10,9 @@ dependencies:
     version: 8.16.0
 
 devDependencies:
+  '@cloudflare/workers-types':
+    specifier: ^4.20240329.0
+    version: 4.20240329.0
   '@types/node':
     specifier: ^20.12.2
     version: 20.12.2
@@ -135,6 +138,10 @@ packages:
       '@babel/helper-string-parser': 7.24.1
       '@babel/helper-validator-identifier': 7.22.20
       to-fast-properties: 2.0.0
+    dev: true
+
+  /@cloudflare/workers-types@4.20240329.0:
+    resolution: {integrity: sha512-AbzgvSQjG8Nci4xxQEcjTTVjiWXgOQnFIbIHtEZXteHiMGDXMWGegjWBo5JHGsZCq+U5V/SD5EnlypQnUQEoig==}
     dev: true
 
   /@esbuild/aix-ppc64@0.20.2:

@@ -1,7 +1,8 @@
 import type {Connect} from 'vite';
-import  {WebSocketServer} from 'ws';
+import {WebSocketServer} from 'ws';
 
 import type {Duplex} from 'node:stream';
+import {WebSocket} from "@cloudflare/workers-types/experimental/index";
 
 type IncomingMessage = Connect.IncomingMessage;
 
@@ -9,7 +10,7 @@ type bindFunction = (server: WebSocket, client: WebSocket) => void
 
 const listeners = {} as { [key: string]: bindFunction }
 
-export const bind = (path: string, listener: (serv: WebSocket,client:WebSocket) => void) => {
+export const bind = (path: string, listener: bindFunction) => {
     listeners[path] = listener
 }
 export const unbind = (path: string) => {
@@ -26,7 +27,7 @@ export const handle = async (req: IncomingMessage | Request, socket: Duplex, hea
             let srv = wsPool[pathname];
 
             if (!srv) {
-                console.log({WebSocketServer:WebSocketServer})
+                console.log({WebSocketServer: WebSocketServer})
                 srv = new WebSocketServer({noServer: true});
                 wsPool[pathname] = srv;
                 srv.on('connection', (serv: WebSocket) => {
@@ -44,13 +45,16 @@ export const handle = async (req: IncomingMessage | Request, socket: Duplex, hea
             if (!upgradeHeader || upgradeHeader !== 'websocket') return;
             const webSocketPair = new WebSocketPair();
             const client = webSocketPair[0],
-                server = webSocketPair[1] as WebSocket & {
-                    accept: () => void,
-                };
+                server = webSocketPair[1] as typeof webSocketPair[1] &{
+                    accept:()=>void
+                }
+
             server.accept();
+            // @ts-ignore
             fn(server, client);
-            return new Response(null, {
+            return new (Response)(null, {
                 status: 101,
+                // @ts-ignore
                 webSocket: client
             });
         }
