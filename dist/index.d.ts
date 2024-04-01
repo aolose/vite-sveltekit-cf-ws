@@ -13,9 +13,19 @@ export declare const handle: (req: IncomingMessage | Request, socket: Duplex, he
 
 declare type IncomingMessage = Connect.IncomingMessage;
 
+declare interface Type<T> extends Function {
+    new (...args: any[]): T;
+}
+
 export declare const unbind: (path: string) => void;
 
-declare function WsPlugin(): {
+declare class WebSocketServer extends WebSocket_2.Server {
+    constructor(cfg: {
+        noServer: boolean;
+    });
+}
+
+declare function WsPlugin(ws: Type<WebSocketServer>): {
     name: string;
     transform(this: TransformPluginContext, code: string, id: string): Promise<{
         code: string;

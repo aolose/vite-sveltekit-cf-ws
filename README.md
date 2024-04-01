@@ -9,13 +9,14 @@ vite.config.ts
 ```ts
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
+import { WebSocket } from 'vite';
 import wsPlugin from 'vite-sveltekit-cf-ws';
 
 export default defineConfig({
 	...
     plugins: [
 		sveltekit(),
-		wsPlugin()
+		wsPlugin(WebSocket.Server)
 	],
     ...
 });

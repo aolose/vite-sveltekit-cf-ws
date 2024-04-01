@@ -5,7 +5,9 @@ import type {Duplex} from 'node:stream';
 // For bypassing build
 // In fact, Websocket is not exported in vite.
 // But it can be used locally
-declare class WebSocketServer extends WebSocket.Server {}
+declare class WebSocketServer extends WebSocket.Server {
+    constructor(cfg:{noServer:boolean})
+}
 
 type IncomingMessage = Connect.IncomingMessage;
 type bindFunction = (server: WebSocket, client: WebSocket) => void
@@ -19,14 +21,15 @@ const listeners = {} as { [key: string]: bindFunction }
 
 const wsPool = {} as { [key: string]: WebSocketServer};
 
+interface Type<T> extends Function { new (...args: any[]): T; }
+
+let  WSServer: Type<WebSocketServer>
 const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buffer) => {
     const {pathname} = new URL(req.url || '', 'wss://base.url');
     const fn = listeners[pathname];
     if (fn) {
         if (socket) {
             let srv = wsPool[pathname];
-            const {WebSocket} = await import('vite')
-            const WSServer = WebSocket?.Server
             if(!WSServer)return
             if (!srv) {
                 srv = new WSServer({noServer: true});
@@ -66,7 +69,8 @@ const devGlobal = globalThis as typeof globalThis & {
     __serverHandle: serverHandle;
 };
 
-function WsPlugin() {
+function WsPlugin(ws:Type<WebSocketServer>) {
+    WSServer = ws
     return {
         name: 'svelte-kit-websocket',
         async transform(code, id) {
