@@ -1,6 +1,7 @@
 import {type Connect, type Plugin, type WebSocket} from 'vite';
 import type {Server} from 'node:http';
 import type {Duplex} from 'node:stream';
+import type {Http2ServerRequest} from "node:http2";
 
 
 type IncomingMessage = Connect.IncomingMessage;
@@ -20,19 +21,20 @@ interface Type<T> extends Function {
 }
 
 let WSServer: Type<WebSocket.Server>
-const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buffer) => {
+const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socket: Duplex, head: Buffer) => {
     // cloudflare Worker environment
-    const upgradeHeader = (req as Request)?.headers?.get('Upgrade');
-    console.log({
-        socket:!!socket,
-        url:req.url,
-        upgradeHeader:!!upgradeHeader,
-        isSocket:upgradeHeader === 'websocket'
-    })
+    const upgradeHeader = (req as Http2ServerRequest).headers.upgrade
+        || (req as Request)?.headers?.get('Upgrade');
+    log(JSON.stringify({
+        socket: !!socket,
+        url: req.url,
+        upgradeHeader: !!upgradeHeader,
+        isSocket: upgradeHeader === 'websocket'
+    }))
     if (!socket && upgradeHeader !== 'websocket') return;
     const {pathname} = new URL(req.url || '', 'wss://base.url');
     const fn = listeners[pathname];
-    if(!fn)log(`no ws handle  for path: ${pathname}`)
+    if (!fn) log(`no ws handle  for path: ${pathname}`)
     if (fn) {
         if (socket) {
             let srv = wsPool[pathname];
@@ -132,7 +134,7 @@ function WsPlugin() {
 }
 
 const bind = (path: string, listener: bindFunction) => {
-    if(listener)listeners[path] = listener
+    if (listener) listeners[path] = listener
 }
 
 const unbind = (path: string) => {

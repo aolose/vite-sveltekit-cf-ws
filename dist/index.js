@@ -1,34 +1,34 @@
 const u = {}, p = {};
-let c;
+let l;
 const h = async (e, n, i) => {
   var f;
-  const o = (f = e == null ? void 0 : e.headers) == null ? void 0 : f.get("Upgrade");
-  if (console.log({
+  const r = e.headers.upgrade || ((f = e == null ? void 0 : e.headers) == null ? void 0 : f.get("Upgrade"));
+  if (c(JSON.stringify({
     socket: !!n,
     url: e.url,
-    upgradeHeader: !!o,
-    isSocket: o === "websocket"
-  }), !n && o !== "websocket")
+    upgradeHeader: !!r,
+    isSocket: r === "websocket"
+  })), !n && r !== "websocket")
     return;
-  const { pathname: s } = new URL(e.url || "", "wss://base.url"), r = u[s];
-  if (r || l(`no ws handle  for path: ${s}`), r)
+  const { pathname: s } = new URL(e.url || "", "wss://base.url"), o = u[s];
+  if (o || c(`no ws handle  for path: ${s}`), o)
     if (n) {
       let t = p[s];
-      t || (t = new c({ noServer: !0 }), p[s] = t, t.on("connection", (a) => {
-        r(a, a);
+      t || (t = new l({ noServer: !0 }), p[s] = t, t.on("connection", (a) => {
+        o(a, a);
       })), t.handleUpgrade(e, n, i, (a) => {
         t.emit("connection", a, e);
       });
     } else
       try {
         const t = new WebSocketPair(), a = t[0], d = t[1];
-        return d.accept(), r(d, a), new Response(null, {
+        return d.accept(), o(d, a), new Response(null, {
           status: 101,
           // @ts-ignore
           webSocket: a
         });
       } catch (t) {
-        t instanceof Error && l("error:" + t.toString());
+        t instanceof Error && c("error:" + t.toString());
       }
 }, w = globalThis;
 function g() {
@@ -60,21 +60,21 @@ function g() {
     },
     async configureServer(e) {
       var n;
-      c || new Promise((i) => {
-        const o = () => {
+      l || new Promise((i) => {
+        const r = () => {
           if (!e.ws) {
-            setTimeout(o);
+            setTimeout(r);
             return;
           }
-          const s = function(r) {
-            i(c = this.constructor), e.ws.off("connection", s);
+          const s = function(o) {
+            i(l = this.constructor), e.ws.off("connection", s);
           };
           e.ws.on("connection", s);
         };
-        o();
-      }), (n = e.httpServer) == null || n.on("upgrade", async (i, o, s) => {
-        const r = w.__serverHandle;
-        r && await r(i, o, s);
+        r();
+      }), (n = e.httpServer) == null || n.on("upgrade", async (i, r, s) => {
+        const o = w.__serverHandle;
+        o && await o(i, r, s);
       });
     }
   };
@@ -84,10 +84,10 @@ const v = (e, n) => {
 }, b = (e) => {
   delete u[e];
 };
-let l = (e) => {
+let c = (e) => {
 };
 const m = (e) => {
-  l = e;
+  c = e;
 };
 export {
   v as bind,
