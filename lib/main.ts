@@ -2,7 +2,13 @@ import {type Connect, type Plugin, WebSocket} from 'vite';
 import type {Server} from 'node:http';
 import type {Duplex} from 'node:stream';
 
-const WSServer = WebSocket.Server
+// For bypassing build
+// In fact, Websocket is not exported in vite.
+// But it can be used locally
+const LocalServer = WebSocket?.Server || class {}
+const WSServer = LocalServer as typeof LocalServer
+const _ = new WSServer()
+type WebSocketServer = typeof _
 
 type IncomingMessage = Connect.IncomingMessage;
 type bindFunction = (server: WebSocket, client: WebSocket) => void
@@ -14,17 +20,7 @@ type serverHandle = (
 
 const listeners = {} as { [key: string]: bindFunction }
 
-const bind = (path: string, listener: bindFunction) => {
-    listeners[path] = listener
-}
-const unbind = (path: string) => {
-    delete listeners[path]
-}
-
-const sv = new WSServer({noServer:true})
-type WebSocketServer = typeof sv
-
-const wsPool = {} as { [key: string]: WebSocketServer };
+const wsPool = {} as { [key: string]: WebSocketServer};
 
 const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buffer) => {
     const {pathname} = new URL(req.url || '', 'wss://base.url');
@@ -42,7 +38,7 @@ const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buff
                 });
             }
 
-            srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws) => {
+            srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws:unknown) => {
                 srv.emit('connection', ws, req);
             });
 
@@ -112,5 +108,16 @@ function WsPlugin() {
     } satisfies Plugin;
 }
 
-export {bind, unbind, handle}
+const bind = (path: string, listener: bindFunction) => {
+    listeners[path] = listener
+}
+
+const unbind = (path: string) => {
+    delete listeners[path]
+}
+export {
+    bind,
+    unbind,
+    handle
+}
 export default WsPlugin
