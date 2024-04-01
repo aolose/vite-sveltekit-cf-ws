@@ -21,6 +21,10 @@ interface Type<T> extends Function {
 
 let WSServer: Type<WebSocket.Server>
 const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buffer) => {
+    // cloudflare Worker environment
+    const upgradeHeader = (req as Request)?.headers?.get('Upgrade');
+    if (!socket||!upgradeHeader || upgradeHeader !== 'websocket') return;
+
     const {pathname} = new URL(req.url || '', 'wss://base.url');
     const fn = listeners[pathname];
     if(!fn)log(`no ws handle  for path: ${pathname}`)
@@ -40,9 +44,6 @@ const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buff
 
         } else {
             try {
-                // cloudflare Worker environment
-                const upgradeHeader = (req as Request).headers.get('Upgrade');
-                if (!upgradeHeader || upgradeHeader !== 'websocket') return;
                 const webSocketPair = new WebSocketPair();
                 const client = webSocketPair[0],
                     server = webSocketPair[1] as typeof webSocketPair[1] & {
