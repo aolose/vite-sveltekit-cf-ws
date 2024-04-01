@@ -15,6 +15,8 @@ declare type IncomingMessage = Connect.IncomingMessage;
 
 export declare const unbind: (path: string) => void;
 
+export declare const watchLog: (cb: (s: string) => string) => void;
+
 declare function WsPlugin(): {
     name: string;
     transform(this: TransformPluginContext, code: string, id: string): Promise<{

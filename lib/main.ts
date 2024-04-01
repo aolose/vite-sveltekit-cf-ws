@@ -13,13 +13,17 @@ type serverHandle = (
 
 const listeners = {} as { [key: string]: bindFunction }
 
-const wsPool = {} as { [key: string]: WebSocket.Server};
+const wsPool = {} as { [key: string]: WebSocket.Server };
 
-interface Type<T> extends Function { new (...args: unknown[]): T; }
-let WSServer :Type<WebSocket.Server>
-const handle = async (req: IncomingMessage | Request,socket:Duplex,head:Buffer) => {
+interface Type<T> extends Function {
+    new(...args: unknown[]): T;
+}
+
+let WSServer: Type<WebSocket.Server>
+const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buffer) => {
     const {pathname} = new URL(req.url || '', 'wss://base.url');
     const fn = listeners[pathname];
+    log(`fn: ${fn?.toString()}`)
     if (fn) {
         if (socket) {
             let srv = wsPool[pathname];
@@ -30,27 +34,35 @@ const handle = async (req: IncomingMessage | Request,socket:Duplex,head:Buffer) 
                     fn(serv, serv);
                 });
             }
-            srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws:unknown) => {
+            srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws: unknown) => {
                 srv.emit('connection', ws, req);
             });
 
         } else {
-            // cloudflare Worker environment
-            const upgradeHeader = (req as Request).headers.get('Upgrade');
-            if (!upgradeHeader || upgradeHeader !== 'websocket') return;
-            const webSocketPair = new WebSocketPair();
-            const client = webSocketPair[0],
-                server = webSocketPair[1] as typeof webSocketPair[1] & {
-                    accept: () => void
-                }
-            // server.accept();
-            // @ts-ignore
-            fn(server, client);
-            return new (Response)(null, {
-                status: 101,
+            log('use cloudflare ws')
+            try {
+                // cloudflare Worker environment
+                const upgradeHeader = (req as Request).headers.get('Upgrade');
+                if (!upgradeHeader || upgradeHeader !== 'websocket') return;
+                const webSocketPair = new WebSocketPair();
+                const client = webSocketPair[0],
+                    server = webSocketPair[1] as typeof webSocketPair[1] & {
+                        accept: () => void
+                    }
+                log('serv accept')
+                server.accept();
+                log('serv accepted')
                 // @ts-ignore
-                webSocket: client
-            });
+                fn(server, client);
+                return new (Response)(null, {
+                    status: 101,
+                    // @ts-ignore
+                    webSocket: client
+                });
+            } catch (e) {
+                if (e instanceof Error)
+                    log(e.toString())
+            }
         }
     }
 };
@@ -89,19 +101,19 @@ function WsPlugin() {
             return null;
         },
         async configureServer(server) {
-            if(!WSServer){
-                new Promise((resolve)=>{
-                    const run =()=>{
-                        if(!server.ws) {
+            if (!WSServer) {
+                new Promise((resolve) => {
+                    const run = () => {
+                        if (!server.ws) {
                             setTimeout(run)
                             return
                         }
                         // hack websocketServer class
-                        const f = function (this:WebSocket.Server,s:WebSocket){
+                        const f = function (this: WebSocket.Server, s: WebSocket) {
                             resolve(WSServer = this.constructor as Type<WebSocket.Server>)
-                            server.ws.off('connection',f)
+                            server.ws.off('connection', f)
                         }
-                        server.ws.on('connection',f)
+                        server.ws.on('connection', f)
                     }
                     run()
                 })
@@ -123,7 +135,15 @@ const bind = (path: string, listener: bindFunction) => {
 const unbind = (path: string) => {
     delete listeners[path]
 }
+
+let log = (a: string) => {
+}
+
+const watchLog = (cb: (s: string) => string) => {
+    log = cb
+}
 export {
+    watchLog,
     bind,
     unbind,
     handle

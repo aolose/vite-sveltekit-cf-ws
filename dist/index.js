@@ -1,32 +1,37 @@
-const c = {}, u = {};
+const l = {}, f = {};
 let a;
-const p = async (e, t, o) => {
-  const { pathname: s } = new URL(e.url || "", "wss://base.url"), r = c[s];
-  if (r)
-    if (t) {
-      let n = u[s];
-      n || (n = new a({ noServer: !0 }), u[s] = n, n.on("connection", (i) => {
-        r(i, i);
-      })), n.handleUpgrade(e, t, o, (i) => {
-        n.emit("connection", i, e);
+const w = async (e, s, o) => {
+  const { pathname: r } = new URL(e.url || "", "wss://base.url"), t = l[r];
+  if (i(`fn: ${t == null ? void 0 : t.toString()}`), t)
+    if (s) {
+      let n = f[r];
+      n || (n = new a({ noServer: !0 }), f[r] = n, n.on("connection", (c) => {
+        t(c, c);
+      })), n.handleUpgrade(e, s, o, (c) => {
+        n.emit("connection", c, e);
       });
     } else {
-      const n = e.headers.get("Upgrade");
-      if (!n || n !== "websocket")
-        return;
-      const i = new WebSocketPair(), l = i[0], d = i[1];
-      return r(d, l), new Response(null, {
-        status: 101,
-        // @ts-ignore
-        webSocket: l
-      });
+      i("use cloudflare ws");
+      try {
+        const n = e.headers.get("Upgrade");
+        if (!n || n !== "websocket")
+          return;
+        const c = new WebSocketPair(), u = c[0], d = c[1];
+        return i("serv accept"), d.accept(), i("serv accepted"), t(d, u), new Response(null, {
+          status: 101,
+          // @ts-ignore
+          webSocket: u
+        });
+      } catch (n) {
+        n instanceof Error && i(n.toString());
+      }
     }
-}, f = globalThis;
-function w() {
+}, p = globalThis;
+function h() {
   return {
     name: "svelte-kit-websocket",
-    async transform(e, t) {
-      if (t.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
+    async transform(e, s) {
+      if (s.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
         e = `import {dev} from "$app/environment";
 					import {handle} from "vite-sveltekit-cf-ws"
 					` + e.replace(
@@ -50,34 +55,40 @@ function w() {
       return null;
     },
     async configureServer(e) {
-      var t;
+      var s;
       a || new Promise((o) => {
-        const s = () => {
+        const r = () => {
           if (!e.ws) {
-            setTimeout(s);
+            setTimeout(r);
             return;
           }
-          const r = function(n) {
-            o(a = this.constructor), e.ws.off("connection", r);
+          const t = function(n) {
+            o(a = this.constructor), e.ws.off("connection", t);
           };
-          e.ws.on("connection", r);
+          e.ws.on("connection", t);
         };
-        s();
-      }), (t = e.httpServer) == null || t.on("upgrade", async (o, s, r) => {
-        const n = f.__serverHandle;
-        n && await n(o, s, r);
+        r();
+      }), (s = e.httpServer) == null || s.on("upgrade", async (o, r, t) => {
+        const n = p.__serverHandle;
+        n && await n(o, r, t);
       });
     }
   };
 }
-const h = (e, t) => {
-  c[e] = t;
-}, v = (e) => {
-  delete c[e];
+const v = (e, s) => {
+  l[e] = s;
+}, g = (e) => {
+  delete l[e];
+};
+let i = (e) => {
+};
+const m = (e) => {
+  i = e;
 };
 export {
-  h as bind,
-  w as default,
-  p as handle,
-  v as unbind
+  v as bind,
+  h as default,
+  w as handle,
+  g as unbind,
+  m as watchLog
 };
