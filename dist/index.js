@@ -1,34 +1,32 @@
-const l = {}, d = {};
-let i;
-const f = async (t, e, o) => {
-  const { pathname: r } = new URL(t.url || "", "wss://base.url"), a = l[r];
-  if (a)
-    if (e) {
-      let n = d[r];
-      if (!i)
-        return;
-      n || (n = new i({ noServer: !0 }), d[r] = n, n.on("connection", (s) => {
-        a(s, s);
-      })), n.handleUpgrade(t, e, o, (s) => {
-        n.emit("connection", s, t);
+const a = {}, l = {};
+let u = !1, i;
+const f = async (e) => {
+  const { pathname: s } = new URL(e.url || "", "wss://base.url"), r = a[s];
+  if (r)
+    if (u) {
+      let n = l[s];
+      n || (n = new i({ noServer: !0 }), l[s] = n, n.on("connection", (t) => {
+        r(t, t);
+      })), n.handleUpgrade(e, socket, head, (t) => {
+        n.emit("connection", t, e);
       });
     } else {
-      const n = t.headers.get("Upgrade");
+      const n = e.headers.get("Upgrade");
       if (!n || n !== "websocket")
         return;
-      const s = new WebSocketPair(), c = s[0], u = s[1];
-      return u.accept(), a(u, c), new Response(null, {
+      const t = new WebSocketPair(), o = t[0], c = t[1];
+      return c.accept(), r(c, o), new Response(null, {
         status: 101,
         // @ts-ignore
-        webSocket: c
+        webSocket: o
       });
     }
-}, p = globalThis;
-function v(t) {
-  return i = t, {
+}, d = globalThis;
+function p() {
+  return {
     name: "svelte-kit-websocket",
-    async transform(e, o) {
-      if (o.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
+    async transform(e, s) {
+      if (s.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
         e = `import {dev} from "$app/environment";
 					import {handle} from "vite-sveltekit-cf-ws"
 					` + e.replace(
@@ -52,22 +50,34 @@ function v(t) {
       return null;
     },
     async configureServer(e) {
-      var o;
-      (o = e.httpServer) == null || o.on("upgrade", async (r, a, n) => {
-        const s = p.__serverHandle;
-        s && await s(r, a, n);
+      var s;
+      u = !0, i || new Promise((r) => {
+        const n = () => {
+          if (!e.ws) {
+            setTimeout(n);
+            return;
+          }
+          const t = function(o) {
+            r(i = this.constructor), e.ws.off("connection", t);
+          };
+          e.ws.on("connection", t);
+        };
+        n();
+      }), (s = e.httpServer) == null || s.on("upgrade", async (r, n, t) => {
+        const o = d.__serverHandle;
+        o && await o(r);
       });
     }
   };
 }
-const h = (t, e) => {
-  l[t] = e;
-}, w = (t) => {
-  delete l[t];
+const w = (e, s) => {
+  a[e] = s;
+}, h = (e) => {
+  delete a[e];
 };
 export {
-  h as bind,
-  v as default,
+  w as bind,
+  p as default,
   f as handle,
-  w as unbind
+  h as unbind
 };

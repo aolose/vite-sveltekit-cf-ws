@@ -1,36 +1,26 @@
-import {type Connect, type Plugin ,type WebSocket} from 'vite';
+import {type Connect, type Plugin, type WebSocket} from 'vite';
 import type {Server} from 'node:http';
-import type {Duplex} from 'node:stream';
 
-// For bypassing build
-// In fact, Websocket is not exported in vite.
-// But it can be used locally
-declare class WebSocketServer extends WebSocket.Server {
-    constructor(cfg:{noServer:boolean})
-}
 
 type IncomingMessage = Connect.IncomingMessage;
 type bindFunction = (server: WebSocket, client: WebSocket) => void
 type serverHandle = (
-    request: IncomingMessage | Request,
-    socket: Duplex,
-    head: Buffer
+    request: IncomingMessage | Request
 ) => Response | Promise<Response | void> | void;
 
 const listeners = {} as { [key: string]: bindFunction }
 
-const wsPool = {} as { [key: string]: WebSocketServer};
+const wsPool = {} as { [key: string]: WebSocket.Server};
 
-interface Type<T> extends Function { new (...args: any[]): T; }
-
-let  WSServer: Type<WebSocketServer>
-const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buffer) => {
+interface Type<T> extends Function { new (...args: unknown[]): T; }
+let useViteServer = false
+let WSServer :Type<WebSocket.Server>
+const handle = async (req: IncomingMessage | Request) => {
     const {pathname} = new URL(req.url || '', 'wss://base.url');
     const fn = listeners[pathname];
     if (fn) {
-        if (socket) {
+        if (useViteServer) {
             let srv = wsPool[pathname];
-            if(!WSServer)return
             if (!srv) {
                 srv = new WSServer({noServer: true});
                 wsPool[pathname] = srv;
@@ -38,7 +28,7 @@ const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buff
                     fn(serv, serv);
                 });
             }
-
+            // @ts-ignore
             srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws:unknown) => {
                 srv.emit('connection', ws, req);
             });
@@ -52,7 +42,6 @@ const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buff
                 server = webSocketPair[1] as typeof webSocketPair[1] & {
                     accept: () => void
                 }
-
             server.accept();
             // @ts-ignore
             fn(server, client);
@@ -69,8 +58,7 @@ const devGlobal = globalThis as typeof globalThis & {
     __serverHandle: serverHandle;
 };
 
-function WsPlugin(ws:Type<WebSocketServer>) {
-    WSServer = ws
+function WsPlugin() {
     return {
         name: 'svelte-kit-websocket',
         async transform(code, id) {
@@ -100,10 +88,28 @@ function WsPlugin(ws:Type<WebSocketServer>) {
             return null;
         },
         async configureServer(server) {
+            useViteServer = true
+            if(!WSServer){
+                new Promise((resolve)=>{
+                    const run =()=>{
+                        if(!server.ws) {
+                            setTimeout(run)
+                            return
+                        }
+                        // hack websocketServer class
+                        const f = function (this:WebSocket.Server,s:WebSocket){
+                            resolve(WSServer = this.constructor as Type<WebSocket.Server>)
+                            server.ws.off('connection',f)
+                        }
+                        server.ws.on('connection',f)
+                    }
+                    run()
+                })
+            }
             (server.httpServer as Server)?.on('upgrade', async (req, socket, head) => {
                 const h = devGlobal.__serverHandle;
                 if (h) {
-                    await h(req, socket, head);
+                    await h(req);
                 }
             });
         }
