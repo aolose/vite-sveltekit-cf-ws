@@ -1,14 +1,11 @@
-import {type Connect, type Plugin, WebSocket} from 'vite';
+import {type Connect, type Plugin ,type WebSocket} from 'vite';
 import type {Server} from 'node:http';
 import type {Duplex} from 'node:stream';
 
 // For bypassing build
 // In fact, Websocket is not exported in vite.
 // But it can be used locally
-const LocalServer = WebSocket?.Server || class {}
-const WSServer = LocalServer as typeof LocalServer
-const _ = new WSServer()
-type WebSocketServer = typeof _
+declare class WebSocketServer extends WebSocket.Server {}
 
 type IncomingMessage = Connect.IncomingMessage;
 type bindFunction = (server: WebSocket, client: WebSocket) => void
@@ -28,9 +25,10 @@ const handle = async (req: IncomingMessage | Request, socket: Duplex, head: Buff
     if (fn) {
         if (socket) {
             let srv = wsPool[pathname];
-
+            const {WebSocket} = await import('vite')
+            const WSServer = WebSocket?.Server
+            if(!WSServer)return
             if (!srv) {
-                console.log({WebSocketServer: WSServer})
                 srv = new WSServer({noServer: true});
                 wsPool[pathname] = srv;
                 srv.on('connection', (serv: WebSocket) => {
