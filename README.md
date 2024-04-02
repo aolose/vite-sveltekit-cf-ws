@@ -26,28 +26,17 @@ export default defineConfig({
 hooks.server.ts
 
 ```ts
-import type { Handle } from '@sveltejs/kit';
-import { handleUpgrade } from 'vite-sveltekit-cf-ws';
+import {handleUpgrade} from "vite-sveltekit-cf-ws";
 
-let once = 0;
-const initSockets = () => {
-	if (!once) return;
-	once=1
-	handleUpgrade((req, createWebscoket) => {
-		const pathName = new URL(req.url, 'ws://base.url').pathname;
-		if (pathName === '/echo') {
-			const serv = createWebscoket();
-			serv.accept();
-			serv.addEventListener('error', console.error);
-			serv.addEventListener('message', function (e) {
-				serv.send('echo:' + e.data);
-			});
-		}
-	});
-};
+handleUpgrade((req, createWebsocketServer) => {
+    const pathname = new URL(req.url || '', 'ws://base.url').pathname
+    if (pathname === '/hello') {
+        const server = createWebsocketServer()
+        server.accept()
+        server.addEventListener('message', ({data}) => {
+            server.send(`[ws server] received message: "${data}"`)
+        })
+    }
+})
 
-export const handle: Handle = async ({ event, resolve }) => {
-	initSockets();
-	return resolve(event);
-};
 ```
