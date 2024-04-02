@@ -34,7 +34,7 @@ const handle = async (
 										if (tasks.length) {
 											tasks.forEach(([fn, ...args]) => {
 												// @ts-ignore
-												try {rawSrv[fn](...args);}catch{}
+												rawSrv[fn](...args)
 											});
 											tasks.length = 0;
 										}
@@ -47,7 +47,7 @@ const handle = async (
 								return Reflect.get(rawSrv, p, rawSrv);
 							} else {
 								return (...args: unknown[]) => {
-									tasks.push(args);
+									tasks.push([p,...args]);
 								};
 							}
 						}

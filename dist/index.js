@@ -1,42 +1,39 @@
-let l;
-const w = async (e, t, n) => {
+let f;
+const h = async (e, t, n) => {
   var u;
   if ((e.headers.upgrade || ((u = e == null ? void 0 : e.headers) == null ? void 0 : u.get("Upgrade"))) !== "websocket" && !t)
     return;
   let o;
-  return f && await f(e, () => {
+  return d && await d(e, () => {
     if (t) {
-      const c = new l({ noServer: !0 });
+      const i = new f({ noServer: !0 });
       let r;
       const a = [];
       return new Proxy(
         {},
         {
-          get(d, p, v) {
-            return p === "accept" ? () => {
-              c.once("connection", (i) => {
-                r = i, a.length && (a.forEach(([g, ...h]) => {
-                  try {
-                    r[g](...h);
-                  } catch {
-                  }
+          get(p, l, v) {
+            return l === "accept" ? () => {
+              i.once("connection", (c) => {
+                r = c, a.length && (a.forEach(([g, ...w]) => {
+                  r[g](...w);
                 }), a.length = 0);
-              }), c.handleUpgrade(e, t, n, (i) => {
-                c.emit("connection", i, e);
+              }), i.handleUpgrade(e, t, n, (c) => {
+                i.emit("connection", c, e);
               });
-            } : r ? Reflect.get(r, p, r) : (...i) => {
-              a.push(i);
+            } : r ? Reflect.get(r, l, r) : (...c) => {
+              a.push([l, ...c]);
             };
           }
         }
       );
     } else {
-      const c = globalThis, r = new c.WebSocketPair(), a = r[0], d = r[1];
+      const i = globalThis, r = new i.WebSocketPair(), a = r[0], p = r[1];
       return o = new Response(null, {
         status: 101,
         // @ts-ignore
         webSocket: a
-      }), d;
+      }), p;
     }
   }), o;
 };
@@ -64,30 +61,30 @@ if(!dev){
     },
     async configureServer(e) {
       var t;
-      l || new Promise((n) => {
+      f || new Promise((n) => {
         const s = () => {
           if (!e.ws) {
             setTimeout(s);
             return;
           }
           const o = function(u) {
-            n(l = this.constructor), e.ws.off("connection", o);
+            n(f = this.constructor), e.ws.off("connection", o);
           };
           e.ws.on("connection", o);
         };
         s();
       }), (t = e.httpServer) == null || t.on("upgrade", async (n, s, o) => {
-        await w(n, s, o);
+        await h(n, s, o);
       });
     }
   };
 }
-let f;
+let d;
 const S = (e) => {
-  f = e;
+  d = e;
 };
 export {
   m as default,
-  w as handle,
+  h as handle,
   S as handleUpgrade
 };
