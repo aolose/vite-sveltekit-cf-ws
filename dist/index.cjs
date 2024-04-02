@@ -1,16 +1,9 @@
-"use strict";Object.defineProperties(exports,{__esModule:{value:!0},[Symbol.toStringTag]:{value:"Module"}});let u;const h=async(e,n,s)=>{var l;const a=e.headers.upgrade||((l=e==null?void 0:e.headers)==null?void 0:l.get("Upgrade"));if(!n&&a!=="websocket")return;new URL(e.url||"","wss://base.url");let i;return d&&await d(e,()=>{if(n&&s){const r=new u({noServer:!0}),c={addEventListener:(t,o)=>{r.addListener(t,o)},removeEventListener:(t,o)=>{r.removeListener(t,o)},send(t){r.send(t)}};return c.accept=()=>{r.emit&&r.handleUpgrade(e,n,s,t=>{r.emit("connection",t,e)})},c.close=(t,o)=>{n.once("finish",n.destroy);const f={Connection:"close","Content-Type":"text/html","Content-Length":Buffer.byteLength(o||"")};n.end(`HTTP/1.1 ${t}\r
+"use strict";Object.defineProperties(exports,{__esModule:{value:!0},[Symbol.toStringTag]:{value:"Module"}});let l;const h=async(e,n,r)=>{var u;const s=e.headers.upgrade||((u=e==null?void 0:e.headers)==null?void 0:u.get("Upgrade"));if(!n&&s!=="websocket")return;new URL(e.url||"","wss://base.url");let a;return d&&await d(e,()=>{if(n&&r){const o=new l({noServer:!0}),c={addEventListener:(t,i)=>{o.addListener(t,i)},removeEventListener:(t,i)=>{o.removeListener(t,i)},send(t){o.send(t)}};return c.accept=()=>{o.emit&&o.handleUpgrade(e,n,r,t=>{o.emit("connection",t,e)})},c.close=(t,i)=>{n.once("finish",n.destroy);const f={Connection:"close","Content-Type":"text/html","Content-Length":Buffer.byteLength(i||"")};n.end(`HTTP/1.1 ${t}\r
 `+Object.keys(f).map(p=>`${p}: ${f[p]}`).join(`\r
 `)+`\r
 \r
-`+o)},c}else{const r=globalThis,c=new r.WebSocketPair,t=c[0],o=c[1];return i=new Response(null,{status:101,webSocket:t}),o}}),i},v=globalThis;function g(){return{name:"svelte-kit-websocket",async transform(e,n){if(n.endsWith("@sveltejs/kit/src/runtime/server/index.js")){e=`import {dev} from "$app/environment";
-					import {handle} from "vite-sveltekit-cf-ws"
-					`+e.replace("async respond(request, options) {",`
-                async respond(request, options) {
-                    if(handle){
-                      if(dev)globalThis.__serverHandle=handle
-                      else{
+`+i)},c}else{const o=globalThis,c=new o.WebSocketPair,t=c[0],i=c[1];return a=new Response(null,{status:101,webSocket:t}),i}}),a};function w(){return{name:"svelte-kit-websocket",async transform(e,n){if(n.endsWith("@sveltejs/kit/src/runtime/server/index.js")){const r="async respond(request, options) {";e='import {dev} from "$app/environment";import {handle} from "vite-sveltekit-cf-ws"'+e.replace(r,r+`if(handle){
+                        if(!dev){
                          const resp = await handle(request)
                          if(resp) return resp
-                      }
-                    }
-                `);const s=this.parse(e,{allowReturnOutsideFunction:!0});return{code:e,ast:s}}return null},async configureServer(e){var n;u||new Promise(s=>{const a=()=>{if(!e.ws){setTimeout(a);return}const i=function(l){s(u=this.constructor),e.ws.off("connection",i)};e.ws.on("connection",i)};a()}),(n=e.httpServer)==null||n.on("upgrade",async(s,a,i)=>{const l=v.__serverHandle;l&&await l(s,a,i)})}}}let d;const w=e=>{d=e};exports.default=g;exports.handle=h;exports.handleUpgrade=w;
+                      }}`);const s=this.parse(e,{allowReturnOutsideFunction:!0});return{code:e,ast:s}}return null},async configureServer(e){var n;l||new Promise(r=>{const s=()=>{if(!e.ws){setTimeout(s);return}const a=function(u){r(l=this.constructor),e.ws.off("connection",a)};e.ws.on("connection",a)};s()}),(n=e.httpServer)==null||n.on("upgrade",async(r,s,a)=>{await h(r,s,a)})}}}let d;const g=e=>{d=e};exports.default=w;exports.handle=h;exports.handleUpgrade=g;

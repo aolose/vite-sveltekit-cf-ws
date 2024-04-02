@@ -34,7 +34,7 @@ const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socke
                         srv.removeListener(type, listener as Parameters<typeof srv.removeListener>[1])
                     },
                     send(message: ArrayBuffer | ArrayBufferView | string) {
-                      (srv as WebSocket.Server & {send:(message:unknown)=>void}).send(message)
+                        (srv as WebSocket.Server & { send: (message: unknown) => void }).send(message)
                     }
                 } as CFWs
                 cfWs.accept = () => {
@@ -47,7 +47,7 @@ const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socke
                     const headers = {
                         'Connection': 'close',
                         'Content-Type': 'text/html',
-                        'Content-Length': Buffer.byteLength(reason||''),
+                        'Content-Length': Buffer.byteLength(reason || ''),
                     }
                     socket.end(
                         `HTTP/1.1 ${code}\r\n` +
@@ -78,32 +78,19 @@ const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socke
     return res
 }
 
-const devGlobal = globalThis as typeof globalThis & {
-    __serverHandle: serverHandle;
-};
-
 function WsPlugin() {
     return {
         name: 'svelte-kit-websocket',
         async transform(code, id) {
             if (id.endsWith('@sveltejs/kit/src/runtime/server/index.js')) {
-                code =
-                    `import {dev} from "$app/environment";
-					import {handle} from "vite-sveltekit-cf-ws"
-					` +
-                    code.replace(
-                        'async respond(request, options) {',
-                        `
-                async respond(request, options) {
-                    if(handle){
-                      if(dev)globalThis.__serverHandle=handle
-                      else{
+                const target = 'async respond(request, options) {'
+                code = `import {dev} from "$app/environment";import {handle} from "vite-sveltekit-cf-ws"`
+                    + code.replace(target, target +
+                        `if(handle){
+                        if(!dev){
                          const resp = await handle(request)
                          if(resp) return resp
-                      }
-                    }
-                `
-                    );
+                      }}`);
                 const ast = this.parse(code, {
                     allowReturnOutsideFunction: true
                 })
@@ -130,10 +117,7 @@ function WsPlugin() {
                 })
             }
             (server.httpServer as Server)?.on('upgrade', async (req, socket, head) => {
-                const h = devGlobal.__serverHandle;
-                if (h) {
-                    await h(req, socket, head);
-                }
+                await handle(req, socket, head);
             });
         }
     } satisfies Plugin;
