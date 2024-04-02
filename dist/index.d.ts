@@ -4,7 +4,10 @@ import { Http2ServerRequest } from 'node:http2';
 import { ProgramNode } from 'rollup';
 import { TransformPluginContext } from 'rollup';
 import { ViteDevServer } from 'vite';
-import { WebSocket as WebSocket_2 } from 'vite';
+
+declare type CloudflareWebsocket = typeof WebSocketPair[keyof typeof WebSocketPair] & {
+    accept: () => void;
+};
 
 export declare const handle: (req: IncomingMessage | Http2ServerRequest | Request, socket?: Duplex, head?: Buffer) => Promise<Response | undefined>;
 
@@ -12,7 +15,7 @@ export declare const handleUpgrade: (cb: UpgradeFn) => void;
 
 declare type IncomingMessage = Connect.IncomingMessage;
 
-declare type UpgradeFn = (req: IncomingMessage | Request | Http2ServerRequest, createWebsocketServer: () => WebSocket_2.Server | typeof WebSocketPair[keyof typeof WebSocketPair]) => void | Promise<void>;
+declare type UpgradeFn = (req: IncomingMessage | Request | Http2ServerRequest, createWebsocketServer: () => CloudflareWebsocket) => void | Promise<void>;
 
 declare function WsPlugin(): {
     name: string;

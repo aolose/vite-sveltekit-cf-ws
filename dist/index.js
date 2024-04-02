@@ -1,32 +1,48 @@
 let l;
-const p = async (e, n, t) => {
-  var o;
-  const r = e.headers.upgrade || ((o = e == null ? void 0 : e.headers) == null ? void 0 : o.get("Upgrade"));
-  if (!n && r !== "websocket")
+const h = async (e, t, r) => {
+  var i;
+  const o = e.headers.upgrade || ((i = e == null ? void 0 : e.headers) == null ? void 0 : i.get("Upgrade"));
+  if (!t && o !== "websocket")
     return;
   new URL(e.url || "", "wss://base.url");
   let s;
-  return c && await c(e, () => {
-    if (n && t) {
-      const a = new l({ noServer: !0 });
-      return a.handleUpgrade(e, n, t, (i) => {
-        a.emit("connection", i, e);
-      }), a;
+  return u && await u(e, () => {
+    if (t && r) {
+      const n = new l({ noServer: !0 });
+      return n.addEventListener = n.addListener, n.removeEventListener = n.removeListener, n.accept = () => {
+        n.handleUpgrade(e, t, r, (a) => {
+          n.emit("connection", a, e);
+        });
+      }, n.close = (a, c) => {
+        t.once("finish", t.destroy);
+        const d = {
+          Connection: "close",
+          "Content-Type": "text/html",
+          "Content-Length": Buffer.byteLength(c)
+        };
+        t.end(
+          `HTTP/1.1 ${a}\r
+` + Object.keys(d).map((p) => `${p}: ${d[p]}`).join(`\r
+`) + `\r
+\r
+` + c
+        );
+      }, n;
     } else {
-      const a = new WebSocketPair(), i = a[0], u = a[1];
+      const n = new WebSocketPair(), a = n[0], c = n[1];
       return s = new Response(null, {
         status: 101,
         // @ts-ignore
-        webSocket: i
-      }), u;
+        webSocket: a
+      }), c;
     }
   }), s;
-}, d = globalThis;
-function f() {
+}, f = globalThis;
+function v() {
   return {
     name: "svelte-kit-websocket",
-    async transform(e, n) {
-      if (n.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
+    async transform(e, t) {
+      if (t.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
         e = `import {dev} from "$app/environment";
 					import {handle} from "vite-sveltekit-cf-ws"
 					` + e.replace(
@@ -42,40 +58,40 @@ function f() {
                     }
                 `
         );
-        const t = this.parse(e, {
+        const r = this.parse(e, {
           allowReturnOutsideFunction: !0
         });
-        return { code: e, ast: t };
+        return { code: e, ast: r };
       }
       return null;
     },
     async configureServer(e) {
-      var n;
-      l || new Promise((t) => {
-        const r = () => {
+      var t;
+      l || new Promise((r) => {
+        const o = () => {
           if (!e.ws) {
-            setTimeout(r);
+            setTimeout(o);
             return;
           }
-          const s = function(o) {
-            t(l = this.constructor), e.ws.off("connection", s);
+          const s = function(i) {
+            r(l = this.constructor), e.ws.off("connection", s);
           };
           e.ws.on("connection", s);
         };
-        r();
-      }), (n = e.httpServer) == null || n.on("upgrade", async (t, r, s) => {
-        const o = d.__serverHandle;
-        o && await o(t, r, s);
+        o();
+      }), (t = e.httpServer) == null || t.on("upgrade", async (r, o, s) => {
+        const i = f.__serverHandle;
+        i && await i(r, o, s);
       });
     }
   };
 }
-let c;
+let u;
 const w = (e) => {
-  c = e;
+  u = e;
 };
 export {
-  f as default,
-  p as handle,
+  v as default,
+  h as handle,
   w as handleUpgrade
 };

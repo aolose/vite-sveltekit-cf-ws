@@ -13,7 +13,21 @@ type serverHandle = (
 ) => Response | Promise<Response | void> | void;
 
 interface WebsocketServer extends Function {
-    new(cfg: { noServer: boolean }): WebSocket.Server;
+    new(cfg: { noServer: boolean }): {
+        send(message:string |ArrayBuffer  |ArrayBufferView ):void
+        addEventListener:typeof WebSocket.Server.prototype.addListener
+        removeEventListener:typeof WebSocket.Server.prototype.removeListener
+        accept:()=>void
+        close:(code:number,reason:string)=>void
+        addListener:typeof WebSocket.Server.prototype.addListener
+        removeListener:typeof WebSocket.Server.prototype.removeListener
+        emit:typeof WebSocket.Server.prototype.emit
+        handleUpgrade:typeof WebSocket.Server.prototype.handleUpgrade
+    };
+}
+
+type CloudflareWebsocket = typeof WebSocketPair[keyof typeof WebSocketPair] & {
+    accept:()=>void
 }
 
 let WSServer: WebsocketServer
@@ -30,10 +44,30 @@ const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socke
         await onUpgrade(req, () => {
                 if (socket && head) {
                     const srv = new WSServer({noServer: true});
-                    srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws: unknown) => {
-                        srv.emit('connection', ws, req);
-                    });
-                    return srv
+                    srv.addEventListener=srv.addListener
+                    srv.removeEventListener=srv.removeListener
+                    srv.accept=()=>{
+                        srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws: unknown) => {
+                            srv.emit('connection', ws, req);
+                        });
+                    }
+                    srv.close =(code,reason)=>{
+                        socket.once('finish', socket.destroy);
+                        const headers = {
+                            'Connection': 'close',
+                            'Content-Type': 'text/html',
+                            'Content-Length': Buffer.byteLength(reason),
+                        }
+                        socket.end(
+                            `HTTP/1.1 ${code}\r\n` +
+                            Object.keys(headers)
+                                .map((h) => `${h}: ${headers[h as keyof typeof headers]}`)
+                                .join('\r\n') +
+                            '\r\n\r\n' +
+                            reason
+                        );
+                    }
+                    return srv as CloudflareWebsocket
                 } else {
                     const webSocketPair = new WebSocketPair();
                     const client = webSocketPair[0],
@@ -44,7 +78,7 @@ const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socke
                         // @ts-ignore
                         webSocket: client
                     });
-                    return server
+                    return server as CloudflareWebsocket
                 }
             })
     }
@@ -114,7 +148,7 @@ function WsPlugin() {
 
 type UpgradeFn = (
     req: IncomingMessage | Request | Http2ServerRequest,
-    createWebsocketServer: () => WebSocket.Server | typeof WebSocketPair[keyof typeof WebSocketPair]
+    createWebsocketServer: () => CloudflareWebsocket
 ) => void | Promise<void>
 
 let onUpgrade: UpgradeFn | undefined
