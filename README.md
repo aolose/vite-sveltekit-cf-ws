@@ -25,17 +25,21 @@ export default defineConfig({
 hooks.server.ts
 ```ts
 import type { Handle } from '@sveltejs/kit';
-import {bind, unbind} from "vite-sveltekit-cf-ws";
+import {handleUpgrade} from "vite-sveltekit-cf-ws";
 
 let once = 0
 const initSockets = ()=>{
 	if(once++)return
-    bind('/api/test',(serv, client)=>{
-        serv.addEventListener('error', console.error);
-        serv.addEventListener('message', function (e) {
-            serv.send('echo:' + e.data);
-            if(e.data==='unbind')unbind('/api/test')
-        });
+    handleUpgrade((req, createWebscoket)=>{
+        const pathName = new URL(req.url,'ws://base.url').pathname
+        if(pathName==='/echo'){
+            const serv = createWebscoket()
+            serv.accept()
+            serv.addEventListener('error', console.error);
+            serv.addEventListener('message', function (e) {
+                serv.send('echo:' + e.data);
+            })           
+        }
     })
 }
 

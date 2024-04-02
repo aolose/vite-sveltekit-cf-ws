@@ -5,72 +5,51 @@ import type {Http2ServerRequest} from "node:http2";
 
 
 type IncomingMessage = Connect.IncomingMessage;
-type bindFunction = (server: WebSocket, client: WebSocket) => void
+
 type serverHandle = (
     request: IncomingMessage | Request,
     socket: Duplex,
     head: Buffer
 ) => Response | Promise<Response | void> | void;
 
-const listeners = {} as { [key: string]: bindFunction }
-
-const wsPool = {} as { [key: string]: WebSocket.Server };
-
-interface Type<T> extends Function {
-    new(...args: unknown[]): T;
+interface WebsocketServer extends Function {
+    new(cfg: { noServer: boolean }): WebSocket.Server;
 }
 
-let WSServer: Type<WebSocket.Server>
-const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socket: Duplex, head: Buffer) => {
+let WSServer: WebsocketServer
+
+const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socket?: Duplex, head?: Buffer) => {
     // cloudflare Worker environment
     const upgradeHeader = (req as Http2ServerRequest).headers.upgrade
         || (req as Request)?.headers?.get('Upgrade');
-    log(JSON.stringify({
-        socket: !!socket,
-        url: req.url,
-        upgradeHeader: !!upgradeHeader,
-        isSocket: upgradeHeader === 'websocket'
-    }))
     if (!socket && upgradeHeader !== 'websocket') return;
     const {pathname} = new URL(req.url || '', 'wss://base.url');
-    const fn = listeners[pathname];
-    if (!fn) log(`no ws handle  for path: ${pathname}`)
-    if (fn) {
-        if (socket) {
-            let srv = wsPool[pathname];
-            if (!srv) {
-                srv = new WSServer({noServer: true});
-                wsPool[pathname] = srv;
-                srv.on('connection', (serv: WebSocket) => {
-                    fn(serv, serv);
-                });
-            }
-            srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws: unknown) => {
-                srv.emit('connection', ws, req);
-            });
-
-        } else {
-            try {
-                const webSocketPair = new WebSocketPair();
-                const client = webSocketPair[0],
-                    server = webSocketPair[1] as typeof webSocketPair[1] & {
-                        accept: () => void
-                    }
-                server.accept();
-                // @ts-ignore
-                fn(server, client);
-                return new (Response)(null, {
-                    status: 101,
+    let res: Response | undefined
+    if (onUpgrade) {
+        // @ts-ignore
+        await onUpgrade(req, () => {
+                if (socket && head) {
+                    const srv = new WSServer({noServer: true});
+                    srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws: unknown) => {
+                        srv.emit('connection', ws, req);
+                    });
+                    return srv
+                } else {
+                    const webSocketPair = new WebSocketPair();
+                    const client = webSocketPair[0],
+                        server = webSocketPair[1]
                     // @ts-ignore
-                    webSocket: client
-                });
-            } catch (e) {
-                if (e instanceof Error)
-                    log('error:' + e.toString())
-            }
-        }
+                    res = new (Response)(null, {
+                        status: 101,
+                        // @ts-ignore
+                        webSocket: client
+                    });
+                    return server
+                }
+            })
     }
-};
+    return res
+}
 
 const devGlobal = globalThis as typeof globalThis & {
     __serverHandle: serverHandle;
@@ -115,7 +94,7 @@ function WsPlugin() {
                         }
                         // hack websocketServer class
                         const f = function (this: WebSocket.Server, s: WebSocket) {
-                            resolve(WSServer = this.constructor as Type<WebSocket.Server>)
+                            resolve(WSServer = this.constructor as WebsocketServer)
                             server.ws.off('connection', f)
                         }
                         server.ws.on('connection', f)
@@ -133,24 +112,19 @@ function WsPlugin() {
     } satisfies Plugin;
 }
 
-const bind = (path: string, listener: bindFunction) => {
-    if (listener) listeners[path] = listener
+type UpgradeFn = (
+    req: IncomingMessage | Request | Http2ServerRequest,
+    createWebsocketServer: () => WebSocket.Server | typeof WebSocketPair[keyof typeof WebSocketPair]
+) => void | Promise<void>
+
+let onUpgrade: UpgradeFn | undefined
+
+const handleUpgrade = (cb: UpgradeFn) => {
+    onUpgrade = cb
 }
 
-const unbind = (path: string) => {
-    delete listeners[path]
-}
-
-let log = (a: string) => {
-}
-
-const watchLog = (cb: (s: string) => void) => {
-    log = cb
-}
 export {
-    watchLog,
-    bind,
-    unbind,
-    handle
+    handle,
+    handleUpgrade
 }
 export default WsPlugin

@@ -6,17 +6,13 @@ import { TransformPluginContext } from 'rollup';
 import { ViteDevServer } from 'vite';
 import { WebSocket as WebSocket_2 } from 'vite';
 
-export declare const bind: (path: string, listener: bindFunction) => void;
+export declare const handle: (req: IncomingMessage | Http2ServerRequest | Request, socket?: Duplex, head?: Buffer) => Promise<Response | undefined>;
 
-declare type bindFunction = (server: WebSocket_2, client: WebSocket_2) => void;
-
-export declare const handle: (req: IncomingMessage | Http2ServerRequest | Request, socket: Duplex, head: Buffer) => Promise<Response | undefined>;
+export declare const handleUpgrade: (cb: UpgradeFn) => void;
 
 declare type IncomingMessage = Connect.IncomingMessage;
 
-export declare const unbind: (path: string) => void;
-
-export declare const watchLog: (cb: (s: string) => void) => void;
+declare type UpgradeFn = (req: IncomingMessage | Request | Http2ServerRequest, createWebsocketServer: () => WebSocket_2.Server | typeof WebSocketPair[keyof typeof WebSocketPair]) => void | Promise<void>;
 
 declare function WsPlugin(): {
     name: string;
