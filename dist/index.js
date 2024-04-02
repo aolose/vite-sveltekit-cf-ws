@@ -44,7 +44,10 @@ function m() {
                 import {dev} from "$app/environment";
                 import {handle} from "vite-sveltekit-cf-ws";
 ` + e.replace(n, `${n}
-if(!dev)return  await handle(request)`);
+if(!dev){
+                        const res = await handle(request)
+                        if(res)return res
+                    }`);
         const s = this.parse(e);
         return { code: e, ast: s };
       }

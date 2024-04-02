@@ -75,7 +75,10 @@ function WsPlugin() {
                 code = `
                 import {dev} from "$app/environment";
                 import {handle} from "vite-sveltekit-cf-ws";\n`
-                    + code.replace(target, `${target}\nif(!dev)return  await handle(request)`);
+                    + code.replace(target, `${target}\nif(!dev){
+                        const res = await handle(request)
+                        if(res)return res
+                    }`);
                 const ast = this.parse(code)
                 return {code, ast};
             }
