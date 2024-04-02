@@ -31,7 +31,8 @@ import { handleUpgrade } from 'vite-sveltekit-cf-ws';
 
 let once = 0;
 const initSockets = () => {
-	if (once++) return;
+	if (!once) return;
+	once=1
 	handleUpgrade((req, createWebscoket) => {
 		const pathName = new URL(req.url, 'ws://base.url').pathname;
 		if (pathName === '/echo') {
