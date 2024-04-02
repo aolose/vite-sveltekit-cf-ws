@@ -20,7 +20,6 @@ const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socke
                 const srv = new WSServer({noServer: true})
                 let rawSrv: WebSocket | undefined
                 const tasks =[] as unknown[][]
-                let closed: [number, string] | undefined
                 return new Proxy({}, {
                     get(target: {}, p: string | symbol, receiver: any): any {
                         if (p === 'accept') {
@@ -34,7 +33,6 @@ const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socke
                                         });
                                         tasks.length = 0
                                     }
-                                    if (closed) rawSrv.close(closed[0], closed[1])
                                 });
                                 srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws: unknown) => {
                                     srv.emit('connection', ws, req);

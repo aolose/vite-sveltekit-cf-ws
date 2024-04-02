@@ -1,59 +1,49 @@
-let g;
-const v = async (e, n, r) => {
-  var d;
-  if ((e.headers.upgrade || ((d = e == null ? void 0 : e.headers) == null ? void 0 : d.get("Upgrade"))) !== "websocket" && !n)
+let l;
+const h = async (e, t, n) => {
+  var u;
+  if ((e.headers.upgrade || ((u = e == null ? void 0 : e.headers) == null ? void 0 : u.get("Upgrade"))) !== "websocket" && !t)
     return;
   let o;
-  return w && await w(e, () => {
-    if (n) {
-      const u = new g({ noServer: !0 });
-      let t;
-      const i = [];
-      let c;
+  return f && await f(e, () => {
+    if (t) {
+      const i = new l({ noServer: !0 });
+      let r;
+      const a = [];
       return new Proxy({}, {
-        get(m, l, S) {
-          if (l === "accept")
-            return () => {
-              u.once("connection", (a) => {
-                t = a, i.length && (i.forEach(([f, h, p]) => {
-                  t[f](h, p);
-                }), i.length = 0), c && t.close(c[0], c[1]);
-              }), u.handleUpgrade(e, n, r, (a) => {
-                u.emit("connection", a, e);
-              });
-            };
-          if (t)
-            return Reflect.get(t, l, t);
-          if (l === "close")
-            return (a, f) => {
-              c = [a, f];
-            };
-          if (l === "addEventListener" || l === "removeEventListener")
-            return (a, f) => {
-              i.push([l, a, f]);
-            };
+        get(d, p, v) {
+          return p === "accept" ? () => {
+            i.once("connection", (c) => {
+              r = c, a.length && (a.forEach(([g, ...w]) => {
+                r[g](...w);
+              }), a.length = 0);
+            }), i.handleUpgrade(e, t, n, (c) => {
+              i.emit("connection", c, e);
+            });
+          } : r ? Reflect.get(r, p, r) : (...c) => {
+            a.push(c);
+          };
         }
       });
     } else {
-      const u = globalThis, t = new u.WebSocketPair(), i = t[0], c = t[1];
+      const i = globalThis, r = new i.WebSocketPair(), a = r[0], d = r[1];
       return o = new Response(null, {
         status: 101,
         // @ts-ignore
-        webSocket: i
-      }), c;
+        webSocket: a
+      }), d;
     }
   }), o;
 };
-function b() {
+function m() {
   return {
     name: "svelte-kit-websocket",
-    async transform(e, n) {
-      if (n.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
-        const r = "async respond(request, options) {";
+    async transform(e, t) {
+      if (t.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
+        const n = "async respond(request, options) {";
         e = `
                 import {dev} from "$app/environment";
                 import {handle} from "vite-sveltekit-cf-ws";
-` + e.replace(r, `${r}
+` + e.replace(n, `${n}
 if(!dev)return  await handle(request)`);
         const s = this.parse(e);
         return { code: e, ast: s };
@@ -61,31 +51,31 @@ if(!dev)return  await handle(request)`);
       return null;
     },
     async configureServer(e) {
-      var n;
-      g || new Promise((r) => {
+      var t;
+      l || new Promise((n) => {
         const s = () => {
           if (!e.ws) {
             setTimeout(s);
             return;
           }
-          const o = function(d) {
-            r(g = this.constructor), e.ws.off("connection", o);
+          const o = function(u) {
+            n(l = this.constructor), e.ws.off("connection", o);
           };
           e.ws.on("connection", o);
         };
         s();
-      }), (n = e.httpServer) == null || n.on("upgrade", async (r, s, o) => {
-        await v(r, s, o);
+      }), (t = e.httpServer) == null || t.on("upgrade", async (n, s, o) => {
+        await h(n, s, o);
       });
     }
   };
 }
-let w;
-const k = (e) => {
-  w = e;
+let f;
+const S = (e) => {
+  f = e;
 };
 export {
-  b as default,
-  v as handle,
-  k as handleUpgrade
+  m as default,
+  h as handle,
+  S as handleUpgrade
 };
