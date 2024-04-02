@@ -2,63 +2,53 @@ import {type Connect, type Plugin, type WebSocket} from 'vite';
 import type {Server} from 'node:http';
 import type {Duplex} from 'node:stream';
 import type {Http2ServerRequest} from "node:http2";
-import type {WebSocketPair, WebSocket as CFWs} from "@cloudflare/workers-types/2023-07-01"
+import type {WebSocket as CFWs, WebSocketPair} from "@cloudflare/workers-types/2023-07-01"
 
 type IncomingMessage = Connect.IncomingMessage;
-type serverHandle = (
-    request: IncomingMessage | Request,
-    socket: Duplex,
-    head: Buffer
-) => Response | Promise<Response | void> | void;
-
 type Type<T> = new (...args: any[]) => T;
 let WSServer: Type<WebSocket.Server>
 
-const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socket?: Duplex, head?: Buffer) => {
-    // cloudflare Worker environment
-    const upgradeHeader = (req as Http2ServerRequest).headers.upgrade
-        || (req as Request)?.headers?.get('Upgrade');
-    if (!socket && upgradeHeader !== 'websocket') return;
-    const {pathname} = new URL(req.url || '', 'wss://base.url');
+const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socket: Duplex, head: Buffer) => {
+    const upgradeHeader =
+        (req as Http2ServerRequest).headers.upgrade ||
+        (req as Request)?.headers?.get('Upgrade');
+    if (upgradeHeader !== 'websocket' && !socket) return;
     let res: Response | undefined
     if (onUpgrade) {
-        // @ts-ignore
-        await onUpgrade(req, (): CloudflareWebsocket => {
-            if (socket && head) {
+        await onUpgrade(req, () => {
+            if (socket) {
                 const srv = new WSServer({noServer: true})
-                const cfWs = {
-                    addEventListener: (type, listener) => {
-                        srv.addListener(type, listener as Parameters<typeof srv.addListener>[1])
-                    },
-                    removeEventListener: (type, listener) => {
-                        srv.removeListener(type, listener as Parameters<typeof srv.removeListener>[1])
-                    },
-                    send(message: ArrayBuffer | ArrayBufferView | string) {
-                        (srv as WebSocket.Server & { send: (message: unknown) => void }).send(message)
+                let rawSrv: WebSocket | undefined
+                const tasks =[] as unknown[][]
+                let closed: [number, string] | undefined
+                return new Proxy({}, {
+                    get(target: {}, p: string | symbol, receiver: any): any {
+                        if (p === 'accept') {
+                            return ()=>{
+                                srv.once('connection', (serv: WebSocket) => {
+                                    rawSrv = serv
+                                    if (tasks.length) {
+                                        tasks.forEach(([fn, ...args]) => {
+                                            // @ts-ignore
+                                            rawSrv[fn](...args)
+                                        });
+                                        tasks.length = 0
+                                    }
+                                    if (closed) rawSrv.close(closed[0], closed[1])
+                                });
+                                srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws: unknown) => {
+                                    srv.emit('connection', ws, req);
+                                });
+                            }
+                        } else if (rawSrv) {
+                            return Reflect.get(rawSrv, p, rawSrv)
+                        } else {
+                            return (...args:unknown[]) => {
+                                tasks.push(args)
+                            }
+                        }
                     }
-                } as CFWs
-                cfWs.accept = () => {
-                    if (srv.emit) srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws: unknown) => {
-                        srv.emit('connection', ws, req);
-                    });
-                }
-                cfWs.close = (code, reason) => {
-                    socket.once('finish', socket.destroy);
-                    const headers = {
-                        'Connection': 'close',
-                        'Content-Type': 'text/html',
-                        'Content-Length': Buffer.byteLength(reason || ''),
-                    }
-                    socket.end(
-                        `HTTP/1.1 ${code}\r\n` +
-                        Object.keys(headers)
-                            .map((h) => `${h}: ${headers[h as keyof typeof headers]}`)
-                            .join('\r\n') +
-                        '\r\n\r\n' +
-                        reason
-                    );
-                }
-                return cfWs
+                }) as CFWs
             } else {
                 const cfGlobal = globalThis as typeof globalThis & {
                     WebSocketPair: typeof WebSocketPair
@@ -84,16 +74,11 @@ function WsPlugin() {
         async transform(code, id) {
             if (id.endsWith('@sveltejs/kit/src/runtime/server/index.js')) {
                 const target = 'async respond(request, options) {'
-                code = `import {dev} from "$app/environment";import {handle} from "vite-sveltekit-cf-ws"`
-                    + code.replace(target, target +
-                        `if(handle){
-                        if(!dev){
-                         const resp = await handle(request)
-                         if(resp) return resp
-                      }}`);
-                const ast = this.parse(code, {
-                    allowReturnOutsideFunction: true
-                })
+                code = `
+                import {dev} from "$app/environment";
+                import {handle} from "vite-sveltekit-cf-ws";\n`
+                    + code.replace(target, `${target}\nif(!dev)return  await handle(request)`);
+                const ast = this.parse(code)
                 return {code, ast};
             }
             return null;

@@ -1,97 +1,91 @@
-let l;
-const w = async (e, n, r) => {
-  var u;
-  const s = e.headers.upgrade || ((u = e == null ? void 0 : e.headers) == null ? void 0 : u.get("Upgrade"));
-  if (!n && s !== "websocket")
+let g;
+const v = async (e, n, r) => {
+  var d;
+  if ((e.headers.upgrade || ((d = e == null ? void 0 : e.headers) == null ? void 0 : d.get("Upgrade"))) !== "websocket" && !n)
     return;
-  new URL(e.url || "", "wss://base.url");
-  let a;
-  return d && await d(e, () => {
-    if (n && r) {
-      const o = new l({ noServer: !0 }), c = {
-        addEventListener: (t, i) => {
-          o.addListener(t, i);
-        },
-        removeEventListener: (t, i) => {
-          o.removeListener(t, i);
-        },
-        send(t) {
-          o.send(t);
+  let o;
+  return w && await w(e, () => {
+    if (n) {
+      const u = new g({ noServer: !0 });
+      let t;
+      const i = [];
+      let c;
+      return new Proxy({}, {
+        get(m, l, S) {
+          if (l === "accept")
+            return () => {
+              u.once("connection", (a) => {
+                t = a, i.length && (i.forEach(([f, h, p]) => {
+                  t[f](h, p);
+                }), i.length = 0), c && t.close(c[0], c[1]);
+              }), u.handleUpgrade(e, n, r, (a) => {
+                u.emit("connection", a, e);
+              });
+            };
+          if (t)
+            return Reflect.get(t, l, t);
+          if (l === "close")
+            return (a, f) => {
+              c = [a, f];
+            };
+          if (l === "addEventListener" || l === "removeEventListener")
+            return (a, f) => {
+              i.push([l, a, f]);
+            };
         }
-      };
-      return c.accept = () => {
-        o.emit && o.handleUpgrade(e, n, r, (t) => {
-          o.emit("connection", t, e);
-        });
-      }, c.close = (t, i) => {
-        n.once("finish", n.destroy);
-        const f = {
-          Connection: "close",
-          "Content-Type": "text/html",
-          "Content-Length": Buffer.byteLength(i || "")
-        };
-        n.end(
-          `HTTP/1.1 ${t}\r
-` + Object.keys(f).map((p) => `${p}: ${f[p]}`).join(`\r
-`) + `\r
-\r
-` + i
-        );
-      }, c;
+      });
     } else {
-      const o = globalThis, c = new o.WebSocketPair(), t = c[0], i = c[1];
-      return a = new Response(null, {
+      const u = globalThis, t = new u.WebSocketPair(), i = t[0], c = t[1];
+      return o = new Response(null, {
         status: 101,
         // @ts-ignore
-        webSocket: t
-      }), i;
+        webSocket: i
+      }), c;
     }
-  }), a;
+  }), o;
 };
-function h() {
+function b() {
   return {
     name: "svelte-kit-websocket",
     async transform(e, n) {
       if (n.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
         const r = "async respond(request, options) {";
-        e = 'import {dev} from "$app/environment";import {handle} from "vite-sveltekit-cf-ws"' + e.replace(r, r + `if(handle){
-                        if(!dev){
-                         const resp = await handle(request)
-                         if(resp) return resp
-                      }}`);
-        const s = this.parse(e, {
-          allowReturnOutsideFunction: !0
-        });
+        e = `
+                import {dev} from "$app/environment";
+                import {handle} from "vite-sveltekit-cf-ws";
+` + e.replace(r, `${r}
+if(!dev)return  await handle(request)`);
+        const s = this.parse(e);
         return { code: e, ast: s };
       }
       return null;
     },
     async configureServer(e) {
       var n;
-      l || new Promise((r) => {
+      g || new Promise((r) => {
         const s = () => {
           if (!e.ws) {
             setTimeout(s);
             return;
           }
-          const a = function(u) {
-            r(l = this.constructor), e.ws.off("connection", a);
+          const o = function(d) {
+            r(g = this.constructor), e.ws.off("connection", o);
           };
-          e.ws.on("connection", a);
+          e.ws.on("connection", o);
         };
         s();
-      }), (n = e.httpServer) == null || n.on("upgrade", async (r, s, a) => {
-        await w(r, s, a);
+      }), (n = e.httpServer) == null || n.on("upgrade", async (r, s, o) => {
+        await v(r, s, o);
       });
     }
   };
 }
-let d;
-const m = (e) => {
-  d = e;
+let w;
+const k = (e) => {
+  w = e;
 };
 export {
-  h as default,
-  w as handle,
-  m as handleUpgrade
+  b as default,
+  v as handle,
+  k as handleUpgrade
 };

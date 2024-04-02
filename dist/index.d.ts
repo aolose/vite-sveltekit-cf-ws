@@ -6,7 +6,7 @@ import { TransformPluginContext } from 'rollup';
 import { ViteDevServer } from 'vite';
 import { WebSocket as WebSocket_2 } from '@cloudflare/workers-types/2023-07-01';
 
-export declare const handle: (req: IncomingMessage | Http2ServerRequest | Request, socket?: Duplex, head?: Buffer) => Promise<Response | undefined>;
+export declare const handle: (req: IncomingMessage | Http2ServerRequest | Request, socket: Duplex, head: Buffer) => Promise<Response | undefined>;
 
 export declare const handleUpgrade: (cb: UpgradeFn) => void;
 
