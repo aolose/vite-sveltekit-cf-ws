@@ -2,35 +2,17 @@ import {type Connect, type Plugin, type WebSocket} from 'vite';
 import type {Server} from 'node:http';
 import type {Duplex} from 'node:stream';
 import type {Http2ServerRequest} from "node:http2";
-
+import type {WebSocketPair, WebSocket as CFWs} from "@cloudflare/workers-types/2023-07-01"
 
 type IncomingMessage = Connect.IncomingMessage;
-
 type serverHandle = (
     request: IncomingMessage | Request,
     socket: Duplex,
     head: Buffer
 ) => Response | Promise<Response | void> | void;
 
-interface WebsocketServer extends Function {
-    new(cfg: { noServer: boolean }): {
-        send(message:string |ArrayBuffer  |ArrayBufferView ):void
-        addEventListener:typeof WebSocket.Server.prototype.addListener
-        removeEventListener:typeof WebSocket.Server.prototype.removeListener
-        accept:()=>void
-        close:(code:number,reason:string)=>void
-        addListener:typeof WebSocket.Server.prototype.addListener
-        removeListener:typeof WebSocket.Server.prototype.removeListener
-        emit:typeof WebSocket.Server.prototype.emit
-        handleUpgrade:typeof WebSocket.Server.prototype.handleUpgrade
-    };
-}
-
-type CloudflareWebsocket = typeof WebSocketPair[keyof typeof WebSocketPair] & {
-    accept:()=>void
-}
-
-let WSServer: WebsocketServer
+type Type<T> = new (...args: any[]) => T;
+let WSServer: Type<WebSocket.Server>
 
 const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socket?: Duplex, head?: Buffer) => {
     // cloudflare Worker environment
@@ -41,46 +23,57 @@ const handle = async (req: IncomingMessage | Http2ServerRequest | Request, socke
     let res: Response | undefined
     if (onUpgrade) {
         // @ts-ignore
-        await onUpgrade(req, () => {
-                if (socket && head) {
-                    const srv = new WSServer({noServer: true});
-                    srv.addEventListener=srv.addListener
-                    srv.removeEventListener=srv.removeListener
-                    srv.accept=()=>{
-                        srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws: unknown) => {
-                            srv.emit('connection', ws, req);
-                        });
+        await onUpgrade(req, (): CloudflareWebsocket => {
+            if (socket && head) {
+                const srv = new WSServer({noServer: true})
+                const cfWs = {
+                    addEventListener: (type, listener) => {
+                        srv.addListener(type, listener as Parameters<typeof srv.addListener>[1])
+                    },
+                    removeEventListener: (type, listener) => {
+                        srv.removeListener(type, listener as Parameters<typeof srv.removeListener>[1])
+                    },
+                    send(message: ArrayBuffer | ArrayBufferView | string) {
+                      (srv as WebSocket.Server & {send:(message:unknown)=>void}).send(message)
                     }
-                    srv.close =(code,reason)=>{
-                        socket.once('finish', socket.destroy);
-                        const headers = {
-                            'Connection': 'close',
-                            'Content-Type': 'text/html',
-                            'Content-Length': Buffer.byteLength(reason),
-                        }
-                        socket.end(
-                            `HTTP/1.1 ${code}\r\n` +
-                            Object.keys(headers)
-                                .map((h) => `${h}: ${headers[h as keyof typeof headers]}`)
-                                .join('\r\n') +
-                            '\r\n\r\n' +
-                            reason
-                        );
-                    }
-                    return srv as CloudflareWebsocket
-                } else {
-                    const webSocketPair = new WebSocketPair();
-                    const client = webSocketPair[0],
-                        server = webSocketPair[1]
-                    // @ts-ignore
-                    res = new (Response)(null, {
-                        status: 101,
-                        // @ts-ignore
-                        webSocket: client
+                } as CFWs
+                cfWs.accept = () => {
+                    if (srv.emit) srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws: unknown) => {
+                        srv.emit('connection', ws, req);
                     });
-                    return server as CloudflareWebsocket
                 }
-            })
+                cfWs.close = (code, reason) => {
+                    socket.once('finish', socket.destroy);
+                    const headers = {
+                        'Connection': 'close',
+                        'Content-Type': 'text/html',
+                        'Content-Length': Buffer.byteLength(reason||''),
+                    }
+                    socket.end(
+                        `HTTP/1.1 ${code}\r\n` +
+                        Object.keys(headers)
+                            .map((h) => `${h}: ${headers[h as keyof typeof headers]}`)
+                            .join('\r\n') +
+                        '\r\n\r\n' +
+                        reason
+                    );
+                }
+                return cfWs
+            } else {
+                const cfGlobal = globalThis as typeof globalThis & {
+                    WebSocketPair: typeof WebSocketPair
+                }
+                const webSocketPair = new cfGlobal.WebSocketPair();
+                const client = webSocketPair[0],
+                    server = webSocketPair[1]
+                res = new (Response)(null, {
+                    status: 101,
+                    // @ts-ignore
+                    webSocket: client
+                });
+                return server
+            }
+        })
     }
     return res
 }
@@ -128,7 +121,7 @@ function WsPlugin() {
                         }
                         // hack websocketServer class
                         const f = function (this: WebSocket.Server, s: WebSocket) {
-                            resolve(WSServer = this.constructor as WebsocketServer)
+                            resolve(WSServer = this.constructor as Type<WebSocket.Server>)
                             server.ws.off('connection', f)
                         }
                         server.ws.on('connection', f)
@@ -148,7 +141,7 @@ function WsPlugin() {
 
 type UpgradeFn = (
     req: IncomingMessage | Request | Http2ServerRequest,
-    createWebsocketServer: () => CloudflareWebsocket
+    createWebsocketServer: () => CFWs
 ) => void | Promise<void>
 
 let onUpgrade: UpgradeFn | undefined

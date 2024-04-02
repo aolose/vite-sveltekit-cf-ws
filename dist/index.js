@@ -1,48 +1,58 @@
-let l;
-const h = async (e, t, r) => {
-  var i;
-  const o = e.headers.upgrade || ((i = e == null ? void 0 : e.headers) == null ? void 0 : i.get("Upgrade"));
-  if (!t && o !== "websocket")
+let u;
+const v = async (e, n, s) => {
+  var c;
+  const a = e.headers.upgrade || ((c = e == null ? void 0 : e.headers) == null ? void 0 : c.get("Upgrade"));
+  if (!n && a !== "websocket")
     return;
   new URL(e.url || "", "wss://base.url");
-  let s;
-  return u && await u(e, () => {
-    if (t && r) {
-      const n = new l({ noServer: !0 });
-      return n.addEventListener = n.addListener, n.removeEventListener = n.removeListener, n.accept = () => {
-        n.handleUpgrade(e, t, r, (a) => {
-          n.emit("connection", a, e);
+  let i;
+  return d && await d(e, () => {
+    if (n && s) {
+      const r = new u({ noServer: !0 }), l = {
+        addEventListener: (t, o) => {
+          r.addListener(t, o);
+        },
+        removeEventListener: (t, o) => {
+          r.removeListener(t, o);
+        },
+        send(t) {
+          r.send(t);
+        }
+      };
+      return l.accept = () => {
+        r.emit && r.handleUpgrade(e, n, s, (t) => {
+          r.emit("connection", t, e);
         });
-      }, n.close = (a, c) => {
-        t.once("finish", t.destroy);
-        const d = {
+      }, l.close = (t, o) => {
+        n.once("finish", n.destroy);
+        const f = {
           Connection: "close",
           "Content-Type": "text/html",
-          "Content-Length": Buffer.byteLength(c)
+          "Content-Length": Buffer.byteLength(o || "")
         };
-        t.end(
-          `HTTP/1.1 ${a}\r
-` + Object.keys(d).map((p) => `${p}: ${d[p]}`).join(`\r
+        n.end(
+          `HTTP/1.1 ${t}\r
+` + Object.keys(f).map((p) => `${p}: ${f[p]}`).join(`\r
 `) + `\r
 \r
-` + c
+` + o
         );
-      }, n;
+      }, l;
     } else {
-      const n = new WebSocketPair(), a = n[0], c = n[1];
-      return s = new Response(null, {
+      const r = globalThis, l = new r.WebSocketPair(), t = l[0], o = l[1];
+      return i = new Response(null, {
         status: 101,
         // @ts-ignore
-        webSocket: a
-      }), c;
+        webSocket: t
+      }), o;
     }
-  }), s;
-}, f = globalThis;
-function v() {
+  }), i;
+}, h = globalThis;
+function w() {
   return {
     name: "svelte-kit-websocket",
-    async transform(e, t) {
-      if (t.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
+    async transform(e, n) {
+      if (n.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
         e = `import {dev} from "$app/environment";
 					import {handle} from "vite-sveltekit-cf-ws"
 					` + e.replace(
@@ -58,40 +68,40 @@ function v() {
                     }
                 `
         );
-        const r = this.parse(e, {
+        const s = this.parse(e, {
           allowReturnOutsideFunction: !0
         });
-        return { code: e, ast: r };
+        return { code: e, ast: s };
       }
       return null;
     },
     async configureServer(e) {
-      var t;
-      l || new Promise((r) => {
-        const o = () => {
+      var n;
+      u || new Promise((s) => {
+        const a = () => {
           if (!e.ws) {
-            setTimeout(o);
+            setTimeout(a);
             return;
           }
-          const s = function(i) {
-            r(l = this.constructor), e.ws.off("connection", s);
+          const i = function(c) {
+            s(u = this.constructor), e.ws.off("connection", i);
           };
-          e.ws.on("connection", s);
+          e.ws.on("connection", i);
         };
-        o();
-      }), (t = e.httpServer) == null || t.on("upgrade", async (r, o, s) => {
-        const i = f.__serverHandle;
-        i && await i(r, o, s);
+        a();
+      }), (n = e.httpServer) == null || n.on("upgrade", async (s, a, i) => {
+        const c = h.__serverHandle;
+        c && await c(s, a, i);
       });
     }
   };
 }
-let u;
-const w = (e) => {
-  u = e;
+let d;
+const m = (e) => {
+  d = e;
 };
 export {
-  v as default,
-  h as handle,
-  w as handleUpgrade
+  w as default,
+  v as handle,
+  m as handleUpgrade
 };
