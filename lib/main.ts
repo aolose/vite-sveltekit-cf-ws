@@ -34,7 +34,7 @@ const handle = async (
 										if (tasks.length) {
 											tasks.forEach(([fn, ...args]) => {
 												// @ts-ignore
-												rawSrv[fn](...args);
+												try {rawSrv[fn](...args);}catch{}
 											});
 											tasks.length = 0;
 										}

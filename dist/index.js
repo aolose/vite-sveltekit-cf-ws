@@ -1,12 +1,12 @@
 let l;
-const h = async (e, t, n) => {
+const w = async (e, t, n) => {
   var u;
   if ((e.headers.upgrade || ((u = e == null ? void 0 : e.headers) == null ? void 0 : u.get("Upgrade"))) !== "websocket" && !t)
     return;
   let o;
   return f && await f(e, () => {
     if (t) {
-      const i = new l({ noServer: !0 });
+      const c = new l({ noServer: !0 });
       let r;
       const a = [];
       return new Proxy(
@@ -14,21 +14,24 @@ const h = async (e, t, n) => {
         {
           get(d, p, v) {
             return p === "accept" ? () => {
-              i.once("connection", (c) => {
-                r = c, a.length && (a.forEach(([g, ...w]) => {
-                  r[g](...w);
+              c.once("connection", (i) => {
+                r = i, a.length && (a.forEach(([g, ...h]) => {
+                  try {
+                    r[g](...h);
+                  } catch {
+                  }
                 }), a.length = 0);
-              }), i.handleUpgrade(e, t, n, (c) => {
-                i.emit("connection", c, e);
+              }), c.handleUpgrade(e, t, n, (i) => {
+                c.emit("connection", i, e);
               });
-            } : r ? Reflect.get(r, p, r) : (...c) => {
-              a.push(c);
+            } : r ? Reflect.get(r, p, r) : (...i) => {
+              a.push(i);
             };
           }
         }
       );
     } else {
-      const i = globalThis, r = new i.WebSocketPair(), a = r[0], d = r[1];
+      const c = globalThis, r = new c.WebSocketPair(), a = r[0], d = r[1];
       return o = new Response(null, {
         status: 101,
         // @ts-ignore
@@ -74,7 +77,7 @@ if(!dev){
         };
         s();
       }), (t = e.httpServer) == null || t.on("upgrade", async (n, s, o) => {
-        await h(n, s, o);
+        await w(n, s, o);
       });
     }
   };
@@ -85,6 +88,6 @@ const S = (e) => {
 };
 export {
   m as default,
-  h as handle,
+  w as handle,
   S as handleUpgrade
 };
