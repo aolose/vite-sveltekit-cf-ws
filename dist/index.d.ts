@@ -1,7 +1,6 @@
 import { Connect } from 'vite';
 import { Duplex } from 'node:stream';
 import { Http2ServerRequest } from 'node:http2';
-import { ProgramNode } from 'rollup';
 import { TransformPluginContext } from 'rollup';
 import { ViteDevServer } from 'vite';
 import { WebSocket as WebSocket_2 } from '@cloudflare/workers-types/2023-07-01';
@@ -18,7 +17,6 @@ declare function WsPlugin(): {
     name: string;
     transform(this: TransformPluginContext, code: string, id: string): Promise<{
         code: string;
-        ast: ProgramNode;
     } | null>;
     configureServer(this: void, server: ViteDevServer): Promise<void>;
 };
