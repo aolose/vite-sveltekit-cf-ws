@@ -1,82 +1,72 @@
-let l;
-const h = async (e, n, t) => {
-  var d;
-  if ((e.headers.upgrade || ((d = e == null ? void 0 : e.headers) == null ? void 0 : d.get("Upgrade"))) !== "websocket" && !n)
+let o;
+const v = async (e, n, r) => {
+  var g;
+  if ((e.headers.upgrade || ((g = e == null ? void 0 : e.headers) == null ? void 0 : g.get("Upgrade"))) !== "websocket" || o && !n)
     return;
-  let a;
+  let i;
   return f && await f(e, () => {
-    if (n) {
-      const c = new l({ noServer: !0 });
-      let r;
+    if (o) {
+      const a = new o({ noServer: !0 });
+      let t;
       const s = [];
       return new Proxy(
         {},
         {
-          get(g, u, v) {
+          get(h, u, S) {
             return u === "accept" ? () => {
-              c.once("connection", (i) => {
-                r = i, s.length && (s.forEach(([p, ...w]) => {
-                  r[p](...w);
+              a.once("connection", (c) => {
+                t = c, s.length && (s.forEach(([p, ...w]) => {
+                  t[p](...w);
                 }), s.length = 0);
-              }), c.handleUpgrade(e, n, t, (i) => {
-                c.emit("connection", i, e);
+              }), a.handleUpgrade(e, n, r, (c) => {
+                a.emit("connection", c, e);
               });
-            } : r ? Reflect.get(r, u, r) : (...i) => {
-              s.push([u, ...i]);
+            } : t ? Reflect.get(t, u, t) : (...c) => {
+              s.push([u, ...c]);
             };
           }
         }
       );
     } else {
-      const c = globalThis, r = new c.WebSocketPair(), s = r[0], g = r[1];
-      return a = new Response(null, {
+      const a = globalThis, t = new a.WebSocketPair(), s = t[0], h = t[1];
+      return i = new Response(null, {
         status: 101,
         // @ts-ignore
         webSocket: s
-      }), g;
+      }), h;
     }
-  }), a;
+  }), i;
 };
-function m() {
+function k() {
   return {
     name: "svelte-kit-websocket",
     async transform(e, n) {
       if (n.endsWith("@sveltejs/kit/src/runtime/server/index.js")) {
-        const t = "async respond(request, options) {";
-        return e = 'import {dev} from "$app/environment";import {handle} from "vite-sveltekit-cf-ws";' + e.replace(
-          t,
-          `${t}if(!dev){const res = await handle(request);if(res)return res}`
+        const r = "async respond(request, options) {";
+        return e = 'import {handle} from "vite-sveltekit-cf-ws";' + e.replace(
+          r,
+          `${r}const res = await handle(request);if(res)return res;`
         ), { code: e };
       }
       return null;
     },
     async configureServer(e) {
-      var n;
-      if (!l) {
-        const t = () => {
-          if (!e.ws) {
-            setTimeout(t);
-            return;
-          }
-          const o = function(a) {
-            l = this.constructor, e.ws.off("connection", o);
-          };
-          e.ws.on("connection", o);
-        };
-        t();
-      }
-      (n = e.httpServer) == null || n.on("upgrade", async (t, o, a) => {
-        await h(t, o, a);
+      var r;
+      const n = function(l) {
+        e.ws.off("connection", n), o = this.constructor;
+      };
+      e.ws.on("connection", n), (r = e.httpServer) == null || r.on("upgrade", async (l, i, d) => {
+        o && await v(l, i, d);
       });
     }
   };
 }
 let f;
-const S = (e) => {
+const b = (e) => {
   f = e;
 };
 export {
-  m as default,
-  h as handle,
-  S as handleUpgrade
+  k as default,
+  v as handle,
+  b as handleUpgrade
 };
