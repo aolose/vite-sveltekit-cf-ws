@@ -1,7 +1,6 @@
 # vite-sveltekit-cf-ws
 
-Supports local development dev Server
-and cloudflare.
+Supports local development and cloudflare.
 
 ### Usage
 
@@ -10,15 +9,10 @@ vite.config.ts
 ```ts
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
-import wsPlugin from 'vite-sveltekit-cf-ws';
+import ws from 'vite-sveltekit-cf-ws';
 
 export default defineConfig({
-	...
-    plugins: [
-		sveltekit(),
-		wsPlugin()
-	],
-    ...
+    plugins: [sveltekit(), ws()]
 });
 
 ```
