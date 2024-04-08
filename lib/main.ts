@@ -28,8 +28,8 @@ const handle = async (
                     get(target: {}, p: string | symbol, receiver: any): any {
                         if (p === 'accept') {
                             return () => {
-                                srv.once('connection', (serv: WebSocket) => {
-                                    rawSrv = serv;
+                                srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws: WebSocket) => {
+                                    rawSrv=ws
                                     if (tasks.length) {
                                         tasks.forEach(([fn, ...args]) => {
                                             // @ts-ignore
@@ -37,9 +37,6 @@ const handle = async (
                                         });
                                         tasks.length = 0;
                                     }
-                                });
-                                srv.handleUpgrade(req as Connect.IncomingMessage, socket, head, (ws: unknown) => {
-                                    srv.emit('connection', ws, req);
                                 });
                             };
                         } else if (rawSrv) {
