@@ -2,6 +2,9 @@
 
 Supports local development and cloudflare.
 
+
+[demo](https://github.com/aolose/sk-cf-ws-demo)
+
 ### Usage
 
 vite.config.ts
